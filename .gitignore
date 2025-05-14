@@ -1,0 +1,7 @@
+# datafile with ETRI_lifelog
+ch2025_data_items
+ch2025_metrics_train.csv
+ch2025_submission_sample.csv
+
+# trial code
+eda.ipynb
