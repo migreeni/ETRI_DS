@@ -1,9 +1,4 @@
-# datafile with ETRI_lifelog
-ch2025_data_items
-ETRI_lifelog_dataset_2024_guide
-
-ch2025_metrics_train.csv
-ch2025_submission_sample.csv
-
-# trial code
-eda.ipynb
+# ignore data files
+data/
+*.parquet
+*.csv
