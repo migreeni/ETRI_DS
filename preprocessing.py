@@ -68,11 +68,17 @@ def calc_weighted_met(row):
     return met * weight
 
 prep_mActivity['met_activity'] = prep_mActivity.apply(calc_weighted_met, axis=1)
+prep_mActivity = (prep_mActivity
+    .groupby(['subject_id', pd.Grouper(key='timestamp', freq='10T')])
+    .agg({'met_activity': 'sum'})
+    .reset_index()
+)
 
 
 
 # 3. mBle : 가까운 기기가 더 영향을 많이 주도록 가중합
 print("Preprocessing mBle...")
+mBle['timestamp'] = mBle['timestamp'].dt.floor('10T')
 prep_mBle = mBle[['subject_id', 'timestamp']].copy()
 def sum_ble_rssi(ble_stats):
     sum_rssi = 0
@@ -85,6 +91,7 @@ prep_mBle['m_wtb_rssi'] = mBle['m_ble'].apply(sum_ble_rssi)
 
 # 4. mWifi : 가까운 기기가 더 영향을 많이 주도록 가중합
 print("Preprocessing mWifi...")
+mWifi['timestamp'] = mWifi['timestamp'].dt.floor('10T')
 prep_mWifi = mWifi[['subject_id', 'timestamp']].copy()
 def sum_wifi_rssi(wifi_stats):
     sum_rssi = 0
@@ -92,7 +99,7 @@ def sum_wifi_rssi(wifi_stats):
         sum_rssi += np.exp(wifi.get('rssi', 0) / 10)
     return sum_rssi
 
-prep_mWifi['m_wtw_rssi'] = mWifi['m_wifi'].apply(sum_wifi_rssi)
+prep_mWifi['m_wtb_rssi'] = mWifi['m_wifi'].apply(sum_wifi_rssi)
 
 
 # 5. wHr : 평균값
@@ -101,9 +108,11 @@ wHr['heart_rate'] = wHr['heart_rate'].apply(lambda x: np.mean(x))
 prep_wHr = (wHr.groupby(['subject_id', 
                          pd.Grouper(key='timestamp', freq='10min')])
             ['heart_rate']
-            .apply(list)
+            # .apply(list) -> 평균값으로 수정
+            .mean()
             .reset_index()
         )
+
 
 # 6. wPedo : distance, burned_calories만 평균값
 print("Preprocessing wPedo...")
@@ -141,8 +150,32 @@ prep_wLight = (wLight
             .reset_index()
         )
 
-# 9. mAmbience : 모든 라벨을 칼럼으로 생성하여 사용 -> 일단 평균
+# 9. mAmbience : 모든 라벨을 칼럼으로 생성하여 사용 -> 10분단위 평균 및 NaN을 0으로 채움(민석 수정)
+def expand_m_ambience(row):
+    row_data = {
+        'subject_id': row['subject_id'],
+        'timestamp': row['timestamp']
+    }
+    sound_array = row['m_ambience']
+    if isinstance(sound_array, (list, np.ndarray)):
+        for item in sound_array:
+            if isinstance(item, (list, np.ndarray)) and len(item) == 2:
+                category = item[0].strip()
+                try:
+                    prob = float(item[1])
+                    row_data[category] = prob
+                except:
+                    continue
+    return row_data
 
+prep_mAmbience = pd.DataFrame([expand_m_ambience(row) for _, row in mAmbience.iterrows()])
+prep_mAmbience = (prep_mAmbience
+                  .groupby(['subject_id', 
+                     pd.Grouper(key='timestamp', freq='10min')])
+                  .mean()
+                  .reset_index()
+                  .fillna(0)  # NaN을 0으로 채움
+                  )
 
 
 
@@ -163,5 +196,5 @@ df = reduce(lambda left, right: pd.merge(left, right, on=['subject_id', 'timesta
 
 
 # 저장시 주석 풀기
-# df.to_csv('merged_df.csv', index=False)
+df.to_csv('merged_df.csv', index=False)
 
