@@ -6,20 +6,23 @@ from functools import reduce
 ## dataset loading ------------------------------------------------
 
 # <사용안함> 
-# mACStatus = pd.read_parquet('ch2025_data_items/ch2025_mACStatus.parquet')
-# mScreenStatus = pd.read_parquet('ch2025_data_items/ch2025_mScreenStatus.parquet')
-# mLight = pd.read_parquet('ch2025_data_items/ch2025_mLight.parquet')
+# mACStatus = pd.read_parquet(path + 'ch2025_data_items/ch2025_mACStatus.parquet')
+# mScreenStatus = pd.read_parquet(path + 'ch2025_data_items/ch2025_mScreenStatus.parquet')
+# mLight = pd.read_parquet(path + 'ch2025_data_items/ch2025_mLight.parquet')
  
 print("Loading data...")
-mUsageStats = pd.read_parquet('ch2025_mUsageStats.parquet')
-mActivity = pd.read_parquet('ch2025_mActivity.parquet')
-mBle = pd.read_parquet('ch2025_mBle.parquet')
-mWifi = pd.read_parquet('ch2025_mWifi.parquet')
-wHr = pd.read_parquet('ch2025_wHr.parquet')
-wPedo = pd.read_parquet('ch2025_wPedo.parquet')
-mGps = pd.read_parquet('ch2025_mGps.parquet')
-wLight = pd.read_parquet('ch2025_wLight.parquet')
-mAmbience = pd.read_parquet('ch2025_mAmbience.parquet')
+
+path = 'data/'
+
+mUsageStats = pd.read_parquet(path + 'ch2025_mUsageStats.parquet')
+mActivity = pd.read_parquet(path + 'ch2025_mActivity.parquet')
+mBle = pd.read_parquet(path + 'ch2025_mBle.parquet')
+mWifi = pd.read_parquet(path + 'ch2025_mWifi.parquet')
+wHr = pd.read_parquet(path + 'ch2025_wHr.parquet')
+wPedo = pd.read_parquet(path + 'ch2025_wPedo.parquet')
+mGps = pd.read_parquet(path + 'ch2025_mGps.parquet')
+wLight = pd.read_parquet(path + 'ch2025_wLight.parquet')
+mAmbience = pd.read_parquet(path + 'ch2025_mAmbience.parquet')
 print("Data loaded successfully.")
 
 mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
@@ -41,7 +44,7 @@ mAmbience['timestamp'] = pd.to_datetime(mAmbience['timestamp'])
 print("Preprocessing mUsageStats...")
 
 # mUsageStats 불러오기
-mUsageStats = pd.read_parquet('ch2025_mUsageStats.parquet')
+mUsageStats = pd.read_parquet(path + 'ch2025_mUsageStats.parquet')
 mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
 
 # 딕셔너리 문자열을 리스트로 변환

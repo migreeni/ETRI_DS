@@ -14,7 +14,7 @@ import xgboost as xgb
 # 1. 데이터 로드
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
-merge_df = pd.read_csv("merged_df.csv")
+merge_df = pd.read_csv("Model test_2/merged_df_lv3.csv")
 
 # 2. 날짜 컬럼 생성 및 필터링
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['timestamp']).dt.date

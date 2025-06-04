@@ -6,31 +6,32 @@ import ast
 import re
 
 ## dataset loading ------------------------------------------------
+path = 'data/'
 
 # DataFrame 불러오기
-mACStatus = pd.read_parquet('ch2025_mACStatus.parquet')
+mACStatus = pd.read_parquet(path + 'ch2025_mACStatus.parquet')
 mACStatus['timestamp'] = pd.to_datetime(mACStatus['timestamp'])
-mActivity = pd.read_parquet('ch2025_mActivity.parquet')
+mActivity = pd.read_parquet(path + 'ch2025_mActivity.parquet')
 mActivity['timestamp'] = pd.to_datetime(mActivity['timestamp'])
-mAmbience = pd.read_parquet('ch2025_mAmbience.parquet')
+mAmbience = pd.read_parquet(path + 'ch2025_mAmbience.parquet')
 mAmbience['timestamp'] = pd.to_datetime(mAmbience['timestamp'])
-mBle = pd.read_parquet('ch2025_mBle.parquet')
+mBle = pd.read_parquet(path + 'ch2025_mBle.parquet')
 mBle['timestamp'] = pd.to_datetime(mBle['timestamp'])
-mGps = pd.read_parquet('ch2025_mGps.parquet')
+mGps = pd.read_parquet(path + 'ch2025_mGps.parquet')
 mGps['timestamp'] = pd.to_datetime(mGps['timestamp'])
-mLight = pd.read_parquet('ch2025_mLight.parquet')
+mLight = pd.read_parquet(path + 'ch2025_mLight.parquet')
 mLight['timestamp'] = pd.to_datetime(mLight['timestamp'])
-mScreenStatus = pd.read_parquet('ch2025_mScreenStatus.parquet')
+mScreenStatus = pd.read_parquet(path + 'ch2025_mScreenStatus.parquet')
 mScreenStatus['timestamp'] = pd.to_datetime(mScreenStatus['timestamp'])
-mUsageStats = pd.read_parquet('ch2025_mUsageStats.parquet')
+mUsageStats = pd.read_parquet(path + 'ch2025_mUsageStats.parquet')
 mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
-mWifi = pd.read_parquet('ch2025_mWifi.parquet')
+mWifi = pd.read_parquet(path + 'ch2025_mWifi.parquet')
 mWifi['timestamp'] = pd.to_datetime(mWifi['timestamp'])
-wHr = pd.read_parquet('ch2025_wHr.parquet')
+wHr = pd.read_parquet(path + 'ch2025_wHr.parquet')
 wHr['timestamp'] = pd.to_datetime(wHr['timestamp'])
-wLight = pd.read_parquet('ch2025_wLight.parquet')
+wLight = pd.read_parquet(path + 'ch2025_wLight.parquet')
 wLight['timestamp'] = pd.to_datetime(wLight['timestamp'])
-wPedo = pd.read_parquet('ch2025_wPedo.parquet')
+wPedo = pd.read_parquet(path + 'ch2025_wPedo.parquet')
 wPedo['timestamp'] = pd.to_datetime(wPedo['timestamp'])
 
 ## preprocessing ----------------------------------------------------
