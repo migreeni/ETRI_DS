@@ -1,3 +1,4 @@
 # ignore data files
 data/
 *.parquet
+data/merged_df_original.csv
