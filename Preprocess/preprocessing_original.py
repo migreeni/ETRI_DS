@@ -11,16 +11,18 @@ from functools import reduce
 # mLight = pd.read_parquet('ch2025_data_items/ch2025_mLight.parquet')
  
 print("Loading data...")
-mUsageStats = pd.read_parquet('ch2025_mUsageStats.parquet')
-mActivity = pd.read_parquet('ch2025_mActivity.parquet')
-mBle = pd.read_parquet('ch2025_mBle.parquet')
-mWifi = pd.read_parquet('ch2025_mWifi.parquet')
-wHr = pd.read_parquet('ch2025_wHr.parquet')
-wPedo = pd.read_parquet('ch2025_wPedo.parquet')
-mGps = pd.read_parquet('ch2025_mGps.parquet')
-wLight = pd.read_parquet('ch2025_wLight.parquet')
-mAmbience = pd.read_parquet('ch2025_mAmbience.parquet')
+mUsageStats = pd.read_parquet('../data/ch2025_mUsageStats.parquet')
+mActivity   = pd.read_parquet('../data/ch2025_mActivity.parquet')
+mBle        = pd.read_parquet('../data/ch2025_mBle.parquet')
+mWifi       = pd.read_parquet('../data/ch2025_mWifi.parquet')
+wHr         = pd.read_parquet('../data/ch2025_wHr.parquet')
+wPedo       = pd.read_parquet('../data/ch2025_wPedo.parquet')
+mGps        = pd.read_parquet('../data/ch2025_mGps.parquet')
+wLight      = pd.read_parquet('../data/ch2025_wLight.parquet')
+mAmbience   = pd.read_parquet('../data/ch2025_mAmbience.parquet')
+
 print("Data loaded successfully.")
+
 
 mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
 mActivity['timestamp'] = pd.to_datetime(mActivity['timestamp'])
@@ -41,8 +43,8 @@ mAmbience['timestamp'] = pd.to_datetime(mAmbience['timestamp'])
 print("Preprocessing mUsageStats...")
 
 # mUsageStats 불러오기
-mUsageStats = pd.read_parquet('ch2025_mUsageStats.parquet')
-mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
+# mUsageStats = pd.read_parquet('ch2025_mUsageStats.parquet')
+# mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
 
 # 딕셔너리 문자열을 리스트로 변환
 def parse_app_list(x):
