@@ -171,4 +171,4 @@ print(f'Total: {mean(f1_score_list)}')
 for t in targets:
     submission_df[t] = submission_preds[t]
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
-submission_df.to_csv('dwt_stacking_submission.csv', index=False)
+submission_df.to_csv('submission_pred.csv', index=False)

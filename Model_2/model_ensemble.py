@@ -277,4 +277,4 @@ for t in targets:
 # 제출 파일 저장
 print(f"Total F1: {mean(f1_score_list):.4f}")
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
-submission_df.to_csv('dwt_ensemble.csv', index=False)
+submission_df.to_csv('submission_pred.csv', index=False)

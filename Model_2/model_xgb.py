@@ -67,96 +67,92 @@ submission_X = submission_df.drop(columns=targets + ['subject_id', 'sleep_date',
 n_splits = 5
 kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-# XGBoost
-oof_preds_xgb = {t: np.zeros(len(train_df)) if t != 'S1' else np.zeros((len(train_df), 3)) for t in targets}
-test_preds_xgb = {t: np.zeros((len(submission_df), 3 if t == 'S1' else 1)) for t in targets}
+# OOF/Submission 예측 결과 저장
+oof_preds_xgb = {}
+test_preds_xgb = {}
 
-for target in targets:
-    print(f"Training target: {target}")
-    if target in multi_class_targets:
+for t in targets:
+    print(f"\nTraining target: {t}")
+
+    # 데이터 준비
+    if t == 'S1':
+        oof_preds_xgb[t] = np.zeros((len(train_df), 3))
+        test_preds_xgb[t] = np.zeros((len(submission_df), 3))
+        xgb_objective = 'multi:softprob'
+        xgb_metric = 'mlogloss'
         num_class = 3
     else:
-        num_class = 1
+        oof_preds_xgb[t] = np.zeros(len(train_df))
+        test_preds_xgb[t] = np.zeros(len(submission_df))
+        xgb_objective = 'binary:logistic'
+        xgb_metric = 'logloss'
+        num_class = None
 
-    for fold, (train_idx, val_idx) in enumerate(kf.split(X, train_df[target])):
-        print(f"Fold {fold + 1}/{n_splits} for target {target}")
-        X_train, y_train = X.iloc[train_idx], train_df[target].iloc[train_idx]
-        X_val, y_val = X.iloc[val_idx], train_df[target].iloc[val_idx]
-
-
-        # XGBoost
+    for fold, (train_idx, val_idx) in enumerate(kf.split(X, train_df[t])):
+        print(f"  Fold {fold+1}/{n_splits}")
+        X_train, y_train = X.iloc[train_idx], train_df[t].iloc[train_idx]
+        X_val, y_val = X.iloc[val_idx], train_df[t].iloc[val_idx]
         dtrain = xgb.DMatrix(X_train, label=y_train)
         dval = xgb.DMatrix(X_val, label=y_val)
         dtest = xgb.DMatrix(submission_X)
-        params_xgb = {
-            'objective': 'multi:softprob' if target == 'S1' else 'binary:logistic',
-            'eval_metric': 'mlogloss' if target == 'S1' else 'logloss',
+
+        params = {
+            'objective': xgb_objective,
+            'eval_metric': xgb_metric,
             'seed': 42 + fold,
             'verbosity': 0,
         }
-        if target == 'S1':
-            params_xgb['num_class'] = num_class
+        if num_class:
+            params['num_class'] = num_class
 
-        model_xgb = xgb.train(
-            params_xgb,
+        model = xgb.train(
+            params,
             dtrain,
             num_boost_round=1000,
             evals=[(dval, 'eval')],
             early_stopping_rounds=50,
-            verbose_eval=100,
+            verbose_eval=100
         )
-        pred_val_xgb = model_xgb.predict(dval)
-        pred_test_xgb = model_xgb.predict(dtest)
 
-        # Fold별 평균 F1 score 출력 (모든 모델)
-        f1_scores_lgb = []
-        f1_scores_xgb = []
-        f1_scores_lr = []
+        # fold validation 예측 → OOF 저장
+        pred_val = model.predict(dval)
+        if t == 'S1':
+            oof_preds_xgb[t][val_idx, :] = pred_val
+        else:
+            oof_preds_xgb[t][val_idx] = pred_val
 
-        for t in targets:
-             # XGBoost
-            if t == 'S1':
-                preds = oof_preds_xgb[t][val_idx]
-                pred_labels = np.argmax(preds, axis=1)
-            else:
-                preds = oof_preds_xgb[t][val_idx]
-                pred_labels = (preds > 0.5).astype(int)
-            f1_scores_xgb.append(f1_score(train_df[t].iloc[val_idx], pred_labels, average='macro'))
+        # submission 예측(평균)
+        pred_test = model.predict(dtest)
+        if t == 'S1':
+            test_preds_xgb[t] += pred_test / n_splits
+        else:
+            test_preds_xgb[t] += pred_test / n_splits
 
-        print(f"Fold {fold + 1} Mean F1 Score XGBoost: {np.mean(f1_scores_xgb):.4f}")
-
-# 14. 최종 OOF 평가 및 제출 데이터 예측
-print("\nFinal Evaluation on OOF predictions (XGBoost):")
+# --- OOF F1 score 출력 ---
+print("\nFinal Validation OOF F1 Scores (XGBoost):")
 f1_score_list = []
 for t in targets:
-    print(f"=== Target: {t} ===")
-
-    # 다중 클래스(S1)는 확률 평균 후 argmax
     if t == 'S1':
-        oof_pred_labels = np.argmax(oof_preds_xgb[t][val_idx], axis=1)
-        test_pred_labels = np.argmax(test_preds_xgb[t][val_idx], axis=1)
-
-        acc = (train_df[t] == oof_pred_labels).mean()
-        f1 = f1_score(train_df[t].iloc[val_idx], oof_pred_labels, average='macro')
-        f1_score_list.append(f1)
-        print(f"Accuracy: {acc:.4f}, Macro F1: {f1:.4f}")
-
-    # 이진 분류는 확률 평균 후 0.5 기준 이진화
+        oof_pred_labels = np.argmax(oof_preds_xgb[t], axis=1)
+        f1 = f1_score(train_df[t], oof_pred_labels, average='macro')
+        print(f"{t} Macro F1: {f1:.4f}")
     else:
-        oof_pred_labels = (oof_preds_xgb[t][val_idx] > 0.5).astype(int)
-        test_pred_labels = (test_preds_xgb[t][val_idx] > 0.5).astype(int).flatten()
+        oof_pred_labels = (oof_preds_xgb[t] > 0.5).astype(int)
+        f1 = f1_score(train_df[t], oof_pred_labels)
+        print(f"{t} F1: {f1:.4f}")
+    f1_score_list.append(f1)
+print(f"Total F1 (Mean of 6 targets): {mean(f1_score_list):.4f}")
 
-        acc = (train_df[t] == oof_pred_labels).mean()
-        f1 = f1_score(train_df[t].iloc[val_idx], oof_pred_labels)
-        f1_score_list.append(f1)
-        print(f"Accuracy: {acc:.4f}, F1: {f1:.4f}")
-
-    # 앙상블 예측값을 원래 컬럼명으로 저장
+# --- 제출 데이터 예측 ---
+print("\nMaking predictions for submission data (XGBoost):")
+for t in targets:
+    print(f"Predicting target: {t}")
+    if t == 'S1':
+        test_pred_labels = np.argmax(test_preds_xgb[t], axis=1)
+    else:
+        test_pred_labels = (test_preds_xgb[t] > 0.5).astype(int).flatten()
     submission_df[t] = test_pred_labels
-    # 앙상블 예측값을 원래 컬럼명으로 저장
-    submission_df[t] = test_pred_labels
 
-# 제출 파일 저장
-print(f"Total F1: {mean(f1_score_list):.4f}")
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
-submission_df.to_csv('dwt_xgb.csv', index=False)
+submission_df.to_csv('submission_pred.csv', index=False)
+print("Submission saved as dwt_xgb.csv")
