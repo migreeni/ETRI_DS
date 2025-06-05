@@ -17,11 +17,11 @@ warnings.filterwarnings("ignore", category=UserWarning, module="joblib")
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
 
-# print('data : original')
-# merge_df = pd.read_csv("merged_df_original.csv")
+print('data : original')
+merge_df = pd.read_csv("merged_original.csv")
 
-print('data : dwt')
-merge_df = pd.read_csv("merged_dwt.csv")
+# print('data : dwt')
+# merge_df = pd.read_csv("merged_dwt.csv")
 ################################################################## 
 
 # usage, amb ignore 
@@ -58,6 +58,23 @@ binary_targets = [t for t in targets if t not in multi_class_targets]
 X = train_df.drop(columns=targets + ['subject_id', 'sleep_date', 'lifelog_date'])
 y = train_df[targets]
 submission_X = submission_df.drop(columns=targets + ['subject_id', 'sleep_date', 'lifelog_date'])
+
+def deduplicate_columns(df):
+    seen = {}
+    new_cols = []
+    for col in df.columns:
+        if col not in seen:
+            seen[col] = 1
+            new_cols.append(col)
+        else:
+            seen[col] += 1
+            new_cols.append(f"{col}_{seen[col]}")
+    df.columns = new_cols
+    return df
+
+# 예시: 병합/정제 끝난 후 한 번만
+X = deduplicate_columns(X)
+submission_X = deduplicate_columns(submission_X)
 
 scaler = StandardScaler()
 X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns, index=X.index)
@@ -160,13 +177,13 @@ for target in targets:
 
 # result
 print('result f1 score =========================')
-print(f'Q1: {f1_score_list[0]}')
-print(f'Q2: {f1_score_list[1]}')
-print(f'Q3: {f1_score_list[2]}')
-print(f'S1: {f1_score_list[3]}')
-print(f'S2: {f1_score_list[4]}')
-print(f'S3: {f1_score_list[5]}')
-print(f'Total: {mean(f1_score_list)}')
+print(f'Q1: {f1_score_list[0]:.4f}')
+print(f'Q2: {f1_score_list[1]:.4f}')
+print(f'Q3: {f1_score_list[2]:.4f}')
+print(f'S1: {f1_score_list[3]:.4f}')
+print(f'S2: {f1_score_list[4]:.4f}')
+print(f'S3: {f1_score_list[5]:.4f}')
+print(f'Total: {mean(f1_score_list):.4f}')
 
 for t in targets:
     submission_df[t] = submission_preds[t]

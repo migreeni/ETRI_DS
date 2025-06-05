@@ -11,17 +11,17 @@ from tqdm import tqdm
 import lightgbm as lgb
 import xgboost as xgb
 from statistics import mean
-
+pd.set_option('display.max_rows', None)
 ################################################################## 
 # load data - select 
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
 
-# print('data : original')
-# merge_df = pd.read_csv("merged_df_original.csv")
+print('data : original')
+merge_df = pd.read_csv("merged_original.csv")
 
-print('data : dwt')
-merge_df = pd.read_csv("merged_dwt.csv")
+# print('data : dwt')
+# merge_df = pd.read_csv("merged_dwt.csv")
 ################################################################## 
 
 # usage, amb ignore 
@@ -32,7 +32,7 @@ merge_df = pd.read_csv("merged_dwt.csv")
 
 merge_df.fillna(-1, inplace=True)
 
-# train, submission과 병합
+# train, submission
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['lifelog_date'])
 train_df['lifelog_date'] = pd.to_datetime(train_df['lifelog_date'])
 submission_df['lifelog_date'] = pd.to_datetime(submission_df['lifelog_date'])
@@ -40,7 +40,7 @@ submission_df['lifelog_date'] = pd.to_datetime(submission_df['lifelog_date'])
 train_df = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
 submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
 
-# subject_id One-Hot 인코딩
+# subject_id One-Hot 
 # encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
 # train_encoded = encoder.fit_transform(train_merged[['subject_id']])
 # train_id_ohe = pd.DataFrame(train_encoded, columns=encoder.get_feature_names_out(['subject_id']), index=train_merged.index)
@@ -53,7 +53,7 @@ submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 
 train_df.columns = train_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 submission_df.columns = submission_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 
-# 10. 타깃 및 입력 정의
+# 10.
 targets = ['Q1', 'Q2', 'Q3', 'S1', 'S2', 'S3']
 multi_class_targets = ['S1']
 binary_targets = [t for t in targets if t not in multi_class_targets]
@@ -62,19 +62,36 @@ X = train_df.drop(columns=targets + ['subject_id', 'sleep_date', 'lifelog_date']
 y = train_df[targets]
 submission_X = submission_df.drop(columns=targets + ['subject_id', 'sleep_date', 'lifelog_date'])
 
+def deduplicate_columns(df):
+    seen = {}
+    new_cols = []
+    for col in df.columns:
+        if col not in seen:
+            seen[col] = 1
+            new_cols.append(col)
+        else:
+            seen[col] += 1
+            new_cols.append(f"{col}_{seen[col]}")
+    df.columns = new_cols
+    return df
 
-# 12. KFold 설정
+# 예시: 병합/정제 끝난 후 한 번만
+X = deduplicate_columns(X)
+submission_X = deduplicate_columns(submission_X)
+
+print(X.dtypes)
+
+# 12. KFold 
 n_splits = 5
 kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-# OOF/Submission 예측 결과 저장
+# OOF/Submission 
 oof_preds_xgb = {}
 test_preds_xgb = {}
 
 for t in targets:
     print(f"\nTraining target: {t}")
 
-    # 데이터 준비
     if t == 'S1':
         oof_preds_xgb[t] = np.zeros((len(train_df), 3))
         test_preds_xgb[t] = np.zeros((len(submission_df), 3))
@@ -114,21 +131,21 @@ for t in targets:
             verbose_eval=100
         )
 
-        # fold validation 예측 → OOF 저장
+        # fold validation 
         pred_val = model.predict(dval)
         if t == 'S1':
             oof_preds_xgb[t][val_idx, :] = pred_val
         else:
             oof_preds_xgb[t][val_idx] = pred_val
 
-        # submission 예측(평균)
+        # submission
         pred_test = model.predict(dtest)
         if t == 'S1':
             test_preds_xgb[t] += pred_test / n_splits
         else:
             test_preds_xgb[t] += pred_test / n_splits
 
-# --- OOF F1 score 출력 ---
+# --- OOF F1 score ---
 print("\nFinal Validation OOF F1 Scores (XGBoost):")
 f1_score_list = []
 for t in targets:
@@ -143,7 +160,6 @@ for t in targets:
     f1_score_list.append(f1)
 print(f"Total F1 (Mean of 6 targets): {mean(f1_score_list):.4f}")
 
-# --- 제출 데이터 예측 ---
 print("\nMaking predictions for submission data (XGBoost):")
 for t in targets:
     print(f"Predicting target: {t}")

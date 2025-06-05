@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 
@@ -17,22 +18,22 @@ from statistics import mean
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
 
-# print('data : original')
-# merge_df = pd.read_csv("merged_df_original.csv")
+print('data : original')
+merge_df = pd.read_csv("merged_original.csv")
 
-print('data : dwt')
-merge_df = pd.read_csv("merged_dwt.csv")
+# print('data : dwt')
+# merge_df = pd.read_csv("merged_dwt.csv")
 ################################################################## 
 
 # usage, amb ignore 
-print('ignore : usage, amb')
-merge_df = merge_df.iloc[:,:89]
+# print('ignore : usage, amb')
+# merge_df = merge_df.iloc[:,:89]
 
 ##################################################################  
  
 merge_df.fillna(-1, inplace=True)   
 
-# train, submission과 병합
+# train, submission
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['lifelog_date'])
 train_df['lifelog_date'] = pd.to_datetime(train_df['lifelog_date'])
 submission_df['lifelog_date'] = pd.to_datetime(submission_df['lifelog_date'])
@@ -42,7 +43,7 @@ submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 
 # train_merged = train_merged.drop(columns='date')
 # submission_merged = submission_merged.drop(columns='date')
 
-# subject_id One-Hot 인코딩
+# subject_id One-Hot �씤肄붾뵫
 # encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
 # train_encoded = encoder.fit_transform(train_merged[['subject_id']])
 # train_id_ohe = pd.DataFrame(train_encoded, columns=encoder.get_feature_names_out(['subject_id']), index=train_merged.index)
@@ -55,7 +56,6 @@ submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 
 train_df.columns = train_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 submission_df.columns = submission_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 
-# 10. 타깃 및 입력 정의
 targets = ['Q1', 'Q2', 'Q3', 'S1', 'S2', 'S3']
 multi_class_targets = ['S1']
 binary_targets = [t for t in targets if t not in multi_class_targets]
@@ -64,16 +64,31 @@ X = train_df.drop(columns=targets + ['subject_id', 'sleep_date', 'lifelog_date']
 y = train_df[targets]
 submission_X = submission_df.drop(columns=targets + ['subject_id', 'sleep_date', 'lifelog_date'])
 
-# 11. 스케일러 준비 (Logistic Regression용)
+def deduplicate_columns(df):
+    seen = {}
+    new_cols = []
+    for col in df.columns:
+        if col not in seen:
+            seen[col] = 1
+            new_cols.append(col)
+        else:
+            seen[col] += 1
+            new_cols.append(f"{col}_{seen[col]}")
+    df.columns = new_cols
+    return df
+
+# 예시: 병합/정제 끝난 후 한 번만
+X = deduplicate_columns(X)
+submission_X = deduplicate_columns(submission_X)
+
 scaler = StandardScaler()
 X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns, index=X.index)
 submission_X_scaled = pd.DataFrame(scaler.transform(submission_X), columns=submission_X.columns, index=submission_X.index)
 
-# 12. KFold 설정
+# 12. KFold 
 n_splits = 5
 kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-# 13. 예측 결과 저장 공간
 # LightGBM
 oof_preds_lgb = {t: np.zeros(len(train_df)) if t != 'S1' else np.zeros((len(train_df), 3)) for t in targets}
 test_preds_lgb = {t: np.zeros((len(submission_df), 3 if t == 'S1' else 1)) for t in targets}
@@ -183,7 +198,6 @@ for target in targets:
             test_preds_rf[target][:, 0] += pred_test_rf / n_splits
 
 
-        # 저장 (S1: 다중클래스, 나머지: 이진분류)
         if target == 'S1':
             oof_preds_lgb[target][val_idx, :] = pred_val_lgb
             oof_preds_xgb[target][val_idx, :] = pred_val_xgb
@@ -201,7 +215,7 @@ for target in targets:
             test_preds_xgb[target][:, 0] += pred_test_xgb / n_splits
             test_preds_rf[target][:, 0] += pred_test_rf / n_splits
 
-        # Fold별 평균 F1 score 출력 (모든 모델)
+        # Fold
         f1_scores_lgb = []
         f1_scores_xgb = []
         f1_scores_rf = []
@@ -238,14 +252,12 @@ for target in targets:
         print(f"Fold {fold + 1} Mean F1 Score XGBoost: {np.mean(f1_scores_xgb):.4f}")
         print(f"Fold {fold + 1} Mean F1 Score Random Forest: {np.mean(f1_scores_rf):.4f}")
 
-# 14. 최종 OOF 평가 및 제출 데이터 예측 
 print("\nFinal Evaluation on OOF predictions (Ensemble of LightGBM, XGBoost, Random Forest):")
 
 f1_score_list = []
 for t in targets:
     print(f"=== Target: {t} ===")
 
-    # 다중 클래스(S1)는 확률 평균 후 argmax
     if t == 'S1':
         oof_ensemble = (oof_preds_lgb[t] + oof_preds_xgb[t] + oof_preds_rf[t]) / 3
         oof_pred_labels = np.argmax(oof_ensemble, axis=1)
@@ -258,7 +270,6 @@ for t in targets:
         f1_score_list.append(f1)
         print(f"Accuracy: {acc:.4f}, Macro F1: {f1:.4f}")
 
-    # 이진 분류는 확률 평균 후 0.5 기준 이진화
     else:
         oof_ensemble = (oof_preds_lgb[t] + oof_preds_xgb[t] + oof_preds_rf[t]) / 3
         oof_pred_labels = (oof_ensemble > 0.5).astype(int)
@@ -271,10 +282,8 @@ for t in targets:
         f1_score_list.append(f1)
         print(f"Accuracy: {acc:.4f}, F1: {f1:.4f}")
 
-    # 앙상블 예측값을 원래 컬럼명으로 저장
     submission_df[t] = test_pred_labels
 
-# 제출 파일 저장
 print(f"Total F1: {mean(f1_score_list):.4f}")
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
 submission_df.to_csv('submission_pred.csv', index=False)

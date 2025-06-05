@@ -9,40 +9,38 @@ from statistics import mean
 
 from tabpfn import TabPFNClassifier
 
-# 데이터 로드
+
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
-merge_df = pd.read_csv("merged_df_original.csv")
+merge_df = pd.read_csv("merged_original.csv")
 
-# usage, amb 사용 안하므로 컬럼을 89까지 슬라이싱
+# usage, amb 
 merge_df = merge_df.iloc[:,:89]
 
-# lifelog_date 컬럼 없다 나올 시 활성화
-merge_df = merge_df.rename(columns={'timestamp': 'lifelog_date'})
-# train, submission과 병합
+# train, submission
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['lifelog_date'])
 train_df['lifelog_date'] = pd.to_datetime(train_df['lifelog_date'])
 submission_df['lifelog_date'] = pd.to_datetime(submission_df['lifelog_date'])
 
-train_merged = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
-submission_merged = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+train_df = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
 # train_merged = train_merged.drop(columns='date')
 # submission_merged = submission_merged.drop(columns='date')
 
-# subject_id One-Hot 인코딩
-encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-train_encoded = encoder.fit_transform(train_merged[['subject_id']])
-train_id_ohe = pd.DataFrame(train_encoded, columns=encoder.get_feature_names_out(['subject_id']), index=train_merged.index)
-submission_encoded = encoder.transform(submission_merged[['subject_id']])
-submission_id_ohe = pd.DataFrame(submission_encoded, columns=encoder.get_feature_names_out(['subject_id']), index=submission_merged.index)
+# subject_id One-Hot
+# encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+# train_encoded = encoder.fit_transform(train_merged[['subject_id']])
+# train_id_ohe = pd.DataFrame(train_encoded, columns=encoder.get_feature_names_out(['subject_id']), index=train_merged.index)
+# submission_encoded = encoder.transform(submission_merged[['subject_id']])
+# submission_id_ohe = pd.DataFrame(submission_encoded, columns=encoder.get_feature_names_out(['subject_id']), index=submission_merged.index)
 
-train_df = pd.concat([train_merged, train_id_ohe], axis=1)
-submission_df = pd.concat([submission_merged, submission_id_ohe], axis=1)
+# train_df = pd.concat([train_merged, train_id_ohe], axis=1)
+# submission_df = pd.concat([submission_merged, submission_id_ohe], axis=1)
 
 train_df.columns = train_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 submission_df.columns = submission_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 
-# 10. 타깃 및 입력 정의
+# 10.
 targets = ['Q1', 'Q2', 'Q3', 'S1', 'S2', 'S3']
 multi_class_targets = ['S1']
 binary_targets = [t for t in targets if t not in multi_class_targets]
@@ -78,7 +76,6 @@ for target in targets:
 
 
 print(f'TabPFN total f1 score - {mean(f1_score_list)}')
-# 제출 파일 저장
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
 
 submission_df.to_csv('dwt_pfn.csv', index=False)
