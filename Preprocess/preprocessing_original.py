@@ -117,7 +117,7 @@ def sum_wifi_rssi(wifi_stats):
         sum_rssi += np.exp(wifi.get('rssi', 0) / 10)
     return sum_rssi
 
-prep_mWifi['m_wtb_rssi'] = mWifi['m_wifi'].apply(sum_wifi_rssi)
+prep_mWifi['m_wtw_rssi'] = mWifi['m_wifi'].apply(sum_wifi_rssi)
 
 
 # 5. wHr : 평균값
@@ -148,7 +148,7 @@ print("Preprocessing mGps...")
 def mean_gps(row):
     df = pd.DataFrame(list(row))          
     return df[['latitude', 'longitude', 'altitude', 'speed']].mean()
-3
+
 mGps_extract = mGps['m_gps'].apply(mean_gps)   
 mGps_1min = pd.concat([mGps, mGps_extract], axis=1)
 prep_mGps = (mGps_1min.groupby(['subject_id',
