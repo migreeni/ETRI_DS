@@ -8,7 +8,7 @@ import re
 ## dataset loading ------------------------------------------------
 path = 'data/'
 
-# DataFrame ë¶ˆëŸ¬ì˜¤ê¸°
+# DataFrame ë¶ˆëŸ¬?˜¤ê¸?
 mACStatus = pd.read_parquet(path + 'ch2025_mACStatus.parquet')
 mACStatus['timestamp'] = pd.to_datetime(mACStatus['timestamp'])
 mActivity = pd.read_parquet(path + 'ch2025_mActivity.parquet')
@@ -45,26 +45,26 @@ def parse_app_list(x):
     except:
         return []
 
-# íŠ¹ìˆ˜ë¬¸ì ë° ê¸°í˜¸ë¥¼ ì œê±°í•˜ëŠ” í•¨ìˆ˜
+# ?Š¹?ˆ˜ë¬¸ì ë°? ê¸°í˜¸ë¥? ? œê±°í•˜?Š” ?•¨?ˆ˜
 def clean_app_name(app_name):
-    # ëª¨ë“  íŠ¹ìˆ˜ë¬¸ì ë° ê¸°í˜¸ë¥¼ ì œê±°í•˜ê³  ì•ŒíŒŒë²³, ìˆ«ì, ê³µë°±, _, - ë§Œ í—ˆìš©
-    cleaned_name = re.sub(r'[^a-zA-Z0-9\s_-ê°€-í£]', '', app_name.strip())  # ì•ŒíŒŒë²³, ìˆ«ì, ê³µë°±, _, - ë§Œ í—ˆìš©
+    # ëª¨ë“  ?Š¹?ˆ˜ë¬¸ì ë°? ê¸°í˜¸ë¥? ? œê±°í•˜ê³? ?•Œ?ŒŒë²?, ?ˆ«?, ê³µë°±, _, - ë§? ?—ˆ?š©
+    cleaned_name = re.sub(r'[^a-zA-Z0-9\s_-ê°?-?£]', '', app_name.strip())  # ?•Œ?ŒŒë²?, ?ˆ«?, ê³µë°±, _, - ë§? ?—ˆ?š©
     return cleaned_name
 
-# ê° rowì—ì„œ app_nameì„ ì»¬ëŸ¼ìœ¼ë¡œ total_timeì„ ê°’ìœ¼ë¡œ ë¶„í•´
+# ê°? row?—?„œ app_name?„ ì»¬ëŸ¼?œ¼ë¡? total_time?„ ê°’ìœ¼ë¡? ë¶„í•´
 expanded_rows = []
 for _, row in mUsageStats.iterrows():
     app_list = parse_app_list(row['m_usage_stats'])
     row_data = {'subject_id': row['subject_id'], 'timestamp': row['timestamp']}
     for app in app_list:
         if 'app_name' in app and 'total_time' in app:
-            app_name = clean_app_name(app['app_name'])  # í•œê¸€ ë° íŠ¹ìˆ˜ë¬¸ì ì²˜ë¦¬
+            app_name = clean_app_name(app['app_name'])  # ?•œê¸? ë°? ?Š¹?ˆ˜ë¬¸ì ì²˜ë¦¬
             row_data[app_name] = app['total_time']
     expanded_rows.append(row_data)
 
 mUsageStats_expanded = pd.DataFrame(expanded_rows)
 
-# 2. mActivity : ì‹œê°„ëŒ€ë³„ ê°€ì¤‘í•©
+# 2. mActivity : ?‹œê°„ë??ë³? ê°?ì¤‘í•©
 print("Preprocessing mActivity...")
 prep_mActivity = mActivity[['subject_id', 'timestamp', 'm_activity']].copy()
 
@@ -92,7 +92,7 @@ prep_mActivity['met_activity'] = prep_mActivity.apply(
 # Keep only final columns
 prep_mActivity = prep_mActivity[['subject_id', 'timestamp', 'met_activity']]
 
-# 3. mBle : ê°€ê¹Œìš´ ê¸°ê¸°ê°€ ë” ì˜í–¥ì„ ë§ì´ ì£¼ë„ë¡ ê°€ì¤‘í•©
+# 3. mBle : ê°?ê¹Œìš´ ê¸°ê¸°ê°? ?” ?˜?–¥?„ ë§ì´ ì£¼ë„ë¡? ê°?ì¤‘í•©
 print("Preprocessing mBle...")
 # Extract 'subject_id' and 'timestamp' columns
 prep_mBle = mBle[['subject_id', 'timestamp']].copy()
@@ -103,7 +103,7 @@ def weighted_ble_rssi(ble_stats):
 
 prep_mBle['wb_rssi'] = mBle['m_ble'].apply(weighted_ble_rssi)
 
-# 4. mWifi : ê°€ê¹Œìš´ ê¸°ê¸°ê°€ ë” ì˜í–¥ì„ ë§ì´ ì£¼ë„ë¡ ê°€ì¤‘í•©
+# 4. mWifi : ê°?ê¹Œìš´ ê¸°ê¸°ê°? ?” ?˜?–¥?„ ë§ì´ ì£¼ë„ë¡? ê°?ì¤‘í•©
 print("Preprocessing mWifi...")
 # Extract 'subject_id' and 'timestamp' columns
 prep_mWifi = mWifi[['subject_id', 'timestamp']].copy()
@@ -114,7 +114,7 @@ def weighted_wifi_rssi(wifi_stats):
 
 prep_mWifi['ww_rssi'] = mWifi['m_wifi'].apply(weighted_wifi_rssi)
 
-# 5. wHr : í‰ê· ê°’
+# 5. wHr : ?‰ê· ê°’
 print("Preprocessing wHr...")
 prep_wHr = wHr[['subject_id', 'timestamp']].copy()
 
@@ -143,16 +143,16 @@ prep_mGps['avg_longitude'] = mGps['m_gps'].apply(lambda gps: calc_gps_avgs(gps, 
 prep_mGps['avg_altitude'] = mGps['m_gps'].apply(lambda gps: calc_gps_avgs(gps, 'altitude'))
 prep_mGps['avg_speed'] = mGps['m_gps'].apply(lambda gps: calc_gps_avgs(gps, 'speed'))
 
-# 8. wLight : ì›Œì¹˜ë§Œ ì‚¬ìš©í•˜ê¸°ë¡œ í•¨
+# 8. wLight : ?›Œì¹˜ë§Œ ?‚¬?š©?•˜ê¸°ë¡œ ?•¨
 print("Preprocessing wLight...")
 prep_wLight = wLight
 
 # 9. mAmbience
 print("Preprocessing mAmbience...")
-# mAmbience['timestamp']ë¥¼ datetimeìœ¼ë¡œ ë³€í™˜
+# mAmbience['timestamp']ë¥? datetime?œ¼ë¡? ë³??™˜
 mAmbience['timestamp'] = pd.to_datetime(mAmbience['timestamp'])
 
-# í™•ë¥ ê°’ì„ floatìœ¼ë¡œ ë³€í™˜í•˜ê³ , categoryë¥¼ ì»¬ëŸ¼ìœ¼ë¡œ
+# ?™•ë¥ ê°’?„ float?œ¼ë¡? ë³??™˜?•˜ê³?, categoryë¥? ì»¬ëŸ¼?œ¼ë¡?
 def expand_m_ambience(row):
     row_data = {
         'subject_id': row['subject_id'],
@@ -170,11 +170,11 @@ def expand_m_ambience(row):
                     continue
     return row_data
 
-# ë³€í™˜ ì‹¤í–‰
+# ë³??™˜ ?‹¤?–‰
 mAmbience_expanded = pd.DataFrame([expand_m_ambience(row) for _, row in mAmbience.iterrows()])
 
 # dwt ---------------------------------------------------------
-# DWT ìš”ì•½ í•¨ìˆ˜ ì •ì˜
+# DWT ?š”?•½ ?•¨?ˆ˜ ? •?˜
 def dwt_summary(series, wavelet='db1'):
     series = series.dropna()
     if len(series) < 2:
@@ -191,7 +191,7 @@ def dwt_summary(series, wavelet='db1'):
         'cD_mean': np.mean(cD), 'cD_std': np.std(cD), 'cD_energy': np.sum(cD**2), 'cD_entropy': safe_entropy(cD)
     }
 
-# DWT ì ìš© í•¨ìˆ˜ ì •ì˜
+# DWT ? ?š© ?•¨?ˆ˜ ? •?˜
 def create_dwt_features(df, name):
     df = df.copy()
     df['lifelog_date'] = pd.to_datetime(df['timestamp']).dt.date
@@ -205,7 +205,7 @@ def create_dwt_features(df, name):
         feature_rows.append(row)
     return pd.DataFrame(feature_rows)
 
-# ê° ë°ì´í„°ì…‹ë³„ DWT í”¼ì²˜ ìƒì„±
+# ê°? ?°?´?„°?…‹ë³? DWT ?”¼ì²? ?ƒ?„±
 dwt_dfs = []
 datasets = {
     'mActivity': prep_mActivity,
@@ -223,22 +223,22 @@ for name, df in datasets.items():
     dwt_df = create_dwt_features(df, name)
     dwt_dfs.append(dwt_df)
 
-# subject_id, lifelog_date ê¸°ì¤€ìœ¼ë¡œ ë³‘í•©
+# subject_id, lifelog_date ê¸°ì???œ¼ë¡? ë³‘í•©
 from functools import reduce
 merged_dwt_df = reduce(lambda left, right: pd.merge(left, right, on=['subject_id', 'lifelog_date'], how='outer'), dwt_dfs)
 
 
-# ê²°ì¸¡ì¹˜ ì²˜ë¦¬
-merged_dwt_df = merged_dwt_df.fillna(0)
+# ê²°ì¸¡ì¹? ì²˜ë¦¬
+merged_dwt_df = merged_dwt_df.fillna(-1)
 
 ## id one-hot encoding
 for i in range(1, 11):  
     column_name = f'id{i:02d}'  
     df[column_name] = (df['subject_id'] == column_name).astype(int)
 
-# íŠ¹ìˆ˜ë¬¸ì ë° ê³µë°±ì„ `_`ë¡œ ë³€í™˜í•˜ëŠ” ì²˜ë¦¬ ì¶”ê°€
+# ?Š¹?ˆ˜ë¬¸ì ë°? ê³µë°±?„ `_`ë¡? ë³??™˜?•˜?Š” ì²˜ë¦¬ ì¶”ê??
 merged_dwt_df.columns = merged_dwt_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 
-# íŒŒì¼ë¡œ ì €ì¥
+# ?ŒŒ?¼ë¡? ????¥
 merged_dwt_df.to_csv("merged_dwt.csv", index=False)
 
