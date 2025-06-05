@@ -88,7 +88,7 @@ def calc_weighted_met(row):
 
 prep_mActivity['met_activity'] = prep_mActivity.apply(calc_weighted_met, axis=1)
 prep_mActivity = (prep_mActivity
-    .groupby(['subject_id', pd.Grouper(key='timestamp', freq='10T')])
+    .groupby(['subject_id', pd.Grouper(key='timestamp', freq='10min')])
     .agg({'met_activity': 'sum'})
     .reset_index()
 )
@@ -97,7 +97,7 @@ prep_mActivity = (prep_mActivity
 
 # 3. mBle : 가까운 기기가 더 영향을 많이 주도록 가중합
 print("Preprocessing mBle...")
-mBle['timestamp'] = mBle['timestamp'].dt.floor('10T')
+mBle['timestamp'] = mBle['timestamp'].dt.floor('10min')
 prep_mBle = mBle[['subject_id', 'timestamp']].copy()
 def sum_ble_rssi(ble_stats):
     sum_rssi = 0
@@ -110,7 +110,7 @@ prep_mBle['m_wtb_rssi'] = mBle['m_ble'].apply(sum_ble_rssi)
 
 # 4. mWifi : 가까운 기기가 더 영향을 많이 주도록 가중합
 print("Preprocessing mWifi...")
-mWifi['timestamp'] = mWifi['timestamp'].dt.floor('10T')
+mWifi['timestamp'] = mWifi['timestamp'].dt.floor('10min')
 prep_mWifi = mWifi[['subject_id', 'timestamp']].copy()
 def sum_wifi_rssi(wifi_stats):
     sum_rssi = 0
@@ -201,7 +201,6 @@ prep_mAmbience = (prep_mAmbience
 ## Merge all preprocessed dataframes --------------------------------
 print("Merging preprocessed dataframes...")
 df_list = [
-    prep_mUsageStats,
     prep_mActivity,
     prep_mBle,
     prep_mWifi,
@@ -209,6 +208,7 @@ df_list = [
     prep_wPedo, 
     prep_mGps, 
     prep_wLight,
+    prep_mUsageStats,
     prep_mAmbience
     ]
 df = reduce(lambda left, right: pd.merge(left, right, on=['subject_id', 'timestamp'], how='outer'), df_list)

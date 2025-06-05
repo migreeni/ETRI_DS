@@ -3,3 +3,5 @@ data/
 *.parquet
 *.csv
 eda.ipynb
+
+TabPFN/

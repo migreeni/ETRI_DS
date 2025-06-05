@@ -257,4 +257,4 @@ for t in targets:
 
 # 제출 파일 저장
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
-submission_df.to_csv('dwt_ensemble.csv')
+submission_df.to_csv('dwt_ensemble.csv', index=False)

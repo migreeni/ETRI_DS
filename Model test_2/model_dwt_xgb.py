@@ -60,12 +60,8 @@ for target in targets:
     print(f"Training target: {target}")
     if target in multi_class_targets:
         num_class = 3
-        objective_lgb = 'multiclass'
-        metric_lgb = 'multi_logloss'
     else:
         num_class = 1
-        objective_lgb = 'binary'
-        metric_lgb = 'binary_logloss'
 
     for fold, (train_idx, val_idx) in enumerate(kf.split(X, train_df[target])):
         print(f"Fold {fold + 1}/{n_splits} for target {target}")
@@ -143,4 +139,6 @@ for t in targets:
 
 # 제출 파일 저장
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
-submission_df.to_csv('dwt_xgb.csv')
+# index 제거
+submission_df = submission_df.iloc[:,1:]
+submission_df.to_csv('dwt_xgb.csv', index=False)

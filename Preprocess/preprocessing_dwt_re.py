@@ -194,11 +194,11 @@ def dwt_summary(series, wavelet='db1'):
 # DWT 적용 함수 정의
 def create_dwt_features(df, name):
     df = df.copy()
-    df['date'] = pd.to_datetime(df['timestamp']).dt.date
-    value_cols = [col for col in df.columns if col not in ['subject_id', 'timestamp', 'date']]
+    df['lifelog_date'] = pd.to_datetime(df['timestamp']).dt.date
+    value_cols = [col for col in df.columns if col not in ['subject_id', 'timestamp', 'lifelog_date']]
     feature_rows = []
-    for (sid, date), group in df.groupby(['subject_id', 'date']):
-        row = {'subject_id': sid, 'date': date}
+    for (sid, lifelog_date), group in df.groupby(['subject_id', 'lifelog_date']):
+        row = {'subject_id': sid, 'lifelog_date': lifelog_date}
         for col in value_cols:
             features = dwt_summary(group[col])
             row.update({f"{name}_{col}_{k}": v for k, v in features.items()})
@@ -208,7 +208,6 @@ def create_dwt_features(df, name):
 # 각 데이터셋별 DWT 피처 생성
 dwt_dfs = []
 datasets = {
-    'mUsageStats': mUsageStats_expanded,
     'mActivity': prep_mActivity,
     'mBle': prep_mBle,
     'mWifi': prep_mWifi,
@@ -216,6 +215,7 @@ datasets = {
     'wPedo': prep_wPedo,
     'mGps': prep_mGps,
     'wLight': prep_wLight,
+    'mUsageStats': mUsageStats_expanded,
     'mAmbience': mAmbience_expanded
 }
 
@@ -223,9 +223,9 @@ for name, df in datasets.items():
     dwt_df = create_dwt_features(df, name)
     dwt_dfs.append(dwt_df)
 
-# subject_id, date 기준으로 병합
+# subject_id, lifelog_date 기준으로 병합
 from functools import reduce
-merged_dwt_df = reduce(lambda left, right: pd.merge(left, right, on=['subject_id', 'date'], how='outer'), dwt_dfs)
+merged_dwt_df = reduce(lambda left, right: pd.merge(left, right, on=['subject_id', 'lifelog_date'], how='outer'), dwt_dfs)
 
 
 # 결측치 처리
