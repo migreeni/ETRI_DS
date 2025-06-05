@@ -179,11 +179,11 @@ for target in targets:
         else:
             oof_preds_lgb[target][val_idx] = pred_val_lgb
             oof_preds_xgb[target][val_idx] = pred_val_xgb
-            oof_preds_rf[target][val_idx] = pred_val_rf[:, 1]
+            oof_preds_rf[target][val_idx] = pred_val_rf
 
             test_preds_lgb[target][:, 0] += pred_test_lgb / n_splits
             test_preds_xgb[target][:, 0] += pred_test_xgb / n_splits
-            test_preds_rf[target][:, 0] += pred_test_rf[:, 1] / n_splits
+            test_preds_rf[target][:, 0] += pred_test_rf / n_splits
 
         # Fold별 평균 F1 score 출력 (모든 모델)
         f1_scores_lgb = []
