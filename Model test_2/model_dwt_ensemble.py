@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import f1_score
@@ -10,6 +9,8 @@ from tqdm import tqdm
 
 import lightgbm as lgb
 import xgboost as xgb
+from sklearn.ensemble import RandomForestClassifier
+
 
 # 데이터 로드
 train_df = pd.read_csv("ch2025_metrics_train.csv")
@@ -63,19 +64,21 @@ test_preds_lgb = {t: np.zeros((len(submission_df), 3 if t == 'S1' else 1)) for t
 # XGBoost
 oof_preds_xgb = {t: np.zeros(len(train_df)) if t != 'S1' else np.zeros((len(train_df), 3)) for t in targets}
 test_preds_xgb = {t: np.zeros((len(submission_df), 3 if t == 'S1' else 1)) for t in targets}
-# Logistic Regression
-oof_preds_lr = {t: np.zeros(len(train_df)) if t != 'S1' else np.zeros((len(train_df), 3)) for t in targets}
-test_preds_lr = {t: np.zeros((len(submission_df), 3 if t == 'S1' else 1)) for t in targets}
+# Random Forest
+oof_preds_rf = {t: np.zeros(len(train_df)) if t != 'S1' else np.zeros((len(train_df), 3)) for t in targets}
+test_preds_rf = {t: np.zeros((len(submission_df), 3 if t == 'S1' else 1)) for t in targets}
 
 for target in targets:
     print(f"Training target: {target}")
     if target in multi_class_targets:
         num_class = 3
         objective_lgb = 'multiclass'
+        objective_rf = True
         metric_lgb = 'multi_logloss'
     else:
         num_class = 1
         objective_lgb = 'binary'
+        objective_rf = False
         metric_lgb = 'binary_logloss'
 
     for fold, (train_idx, val_idx) in enumerate(kf.split(X, train_df[target])):
@@ -135,38 +138,57 @@ for target in targets:
         pred_val_xgb = model_xgb.predict(dval)
         pred_test_xgb = model_xgb.predict(dtest)
 
-        # Logistic Regression (scaled data, OneVsRestClassifier)
-        if target == 'S1':
-            lr = OneVsRestClassifier(LogisticRegression(max_iter=2000, solver='lbfgs'))
+        # Random Forest
+        if objective_rf:
+            model = RandomForestClassifier(
+                n_estimators=100, 
+                random_state=42+fold, 
+                n_jobs=-1,
+                class_weight='balanced'
+            )
+            model.fit(X_train, y_train)
+            pred_val_rf = model.predict_proba(X_val)
+            pred_test_rf = model.predict_proba(submission_X)
+            oof_preds_rf[target][val_idx, :] = pred_val_rf
+            test_preds_rf[target] += pred_test_rf / n_splits
         else:
-            lr = LogisticRegression(max_iter=2000, solver='lbfgs')
+            X_train, y_train = X.iloc[train_idx], train_df[target].iloc[train_idx]
+            X_val, y_val = X.iloc[val_idx], train_df[target].iloc[val_idx]
+            model = RandomForestClassifier(
+                n_estimators=100, 
+                random_state=42+fold, 
+                n_jobs=-1,
+                class_weight='balanced'
+            )
+            model.fit(X_train, y_train)
+            pred_val_rf = model.predict_proba(X_val)[:, 1]
+            pred_test_rf = model.predict_proba(submission_X)[:, 1]
+            oof_preds_rf[target][val_idx] = pred_val_rf
+            test_preds_rf[target][:, 0] += pred_test_rf / n_splits
 
-        lr.fit(X_train_scaled, y_train)
-        pred_val_lr = lr.predict_proba(X_val_scaled)
-        pred_test_lr = lr.predict_proba(submission_X_scaled)
 
         # 저장 (S1: 다중클래스, 나머지: 이진분류)
         if target == 'S1':
             oof_preds_lgb[target][val_idx, :] = pred_val_lgb
             oof_preds_xgb[target][val_idx, :] = pred_val_xgb
-            oof_preds_lr[target][val_idx, :] = pred_val_lr
+            oof_preds_rf[target][val_idx, :] = pred_val_rf
 
             test_preds_lgb[target] += pred_test_lgb / n_splits
             test_preds_xgb[target] += pred_test_xgb / n_splits
-            test_preds_lr[target] += pred_test_lr / n_splits
+            test_preds_rf[target] += pred_test_rf / n_splits
         else:
             oof_preds_lgb[target][val_idx] = pred_val_lgb
             oof_preds_xgb[target][val_idx] = pred_val_xgb
-            oof_preds_lr[target][val_idx] = pred_val_lr[:, 1]
+            oof_preds_rf[target][val_idx] = pred_val_rf[:, 1]
 
             test_preds_lgb[target][:, 0] += pred_test_lgb / n_splits
             test_preds_xgb[target][:, 0] += pred_test_xgb / n_splits
-            test_preds_lr[target][:, 0] += pred_test_lr[:, 1] / n_splits
+            test_preds_rf[target][:, 0] += pred_test_rf[:, 1] / n_splits
 
         # Fold별 평균 F1 score 출력 (모든 모델)
         f1_scores_lgb = []
         f1_scores_xgb = []
-        f1_scores_lr = []
+        f1_scores_rf = []
 
         for t in targets:
             # LightGBM
@@ -187,31 +209,31 @@ for target in targets:
                 pred_labels = (preds > 0.5).astype(int)
             f1_scores_xgb.append(f1_score(train_df[t].iloc[val_idx], pred_labels, average='macro'))
 
-            # Logistic Regression
+            # Random Forest
             if t == 'S1':
-                preds = oof_preds_lr[t][val_idx]
+                preds = oof_preds_rf[t][val_idx]
                 pred_labels = np.argmax(preds, axis=1)
             else:
-                preds = oof_preds_lr[t][val_idx]
+                preds = oof_preds_rf[t][val_idx]
                 pred_labels = (preds > 0.5).astype(int)
-            f1_scores_lr.append(f1_score(train_df[t].iloc[val_idx], pred_labels, average='macro'))
+            f1_scores_rf.append(f1_score(train_df[t].iloc[val_idx], pred_labels, average='macro'))
 
         print(f"Fold {fold + 1} Mean F1 Score LightGBM: {np.mean(f1_scores_lgb):.4f}")
         print(f"Fold {fold + 1} Mean F1 Score XGBoost: {np.mean(f1_scores_xgb):.4f}")
-        print(f"Fold {fold + 1} Mean F1 Score LogisticRegression: {np.mean(f1_scores_lr):.4f}")
+        print(f"Fold {fold + 1} Mean F1 Score Random Forest: {np.mean(f1_scores_rf):.4f}")
 
-# 14. 최종 OOF 평가 및 제출 데이터 예측 (LightGBM 기준)
-print("\nFinal Evaluation on OOF predictions (Ensemble of LightGBM, XGBoost, LogisticRegression):")
+# 14. 최종 OOF 평가 및 제출 데이터 예측 
+print("\nFinal Evaluation on OOF predictions (Ensemble of LightGBM, XGBoost, Random Forest):")
 
 for t in targets:
     print(f"=== Target: {t} ===")
 
     # 다중 클래스(S1)는 확률 평균 후 argmax
     if t == 'S1':
-        oof_ensemble = (oof_preds_lgb[t] + oof_preds_xgb[t] + oof_preds_lr[t]) / 3
+        oof_ensemble = (oof_preds_lgb[t] + oof_preds_xgb[t] + oof_preds_rf[t]) / 3
         oof_pred_labels = np.argmax(oof_ensemble, axis=1)
 
-        test_ensemble = (test_preds_lgb[t] + test_preds_xgb[t] + test_preds_lr[t]) / 3
+        test_ensemble = (test_preds_lgb[t] + test_preds_xgb[t] + test_preds_rf[t]) / 3
         test_pred_labels = np.argmax(test_ensemble, axis=1)
 
         acc = (train_df[t] == oof_pred_labels).mean()
@@ -220,10 +242,10 @@ for t in targets:
 
     # 이진 분류는 확률 평균 후 0.5 기준 이진화
     else:
-        oof_ensemble = (oof_preds_lgb[t] + oof_preds_xgb[t] + oof_preds_lr[t]) / 3
+        oof_ensemble = (oof_preds_lgb[t] + oof_preds_xgb[t] + oof_preds_rf[t]) / 3
         oof_pred_labels = (oof_ensemble > 0.5).astype(int)
 
-        test_ensemble = (test_preds_lgb[t] + test_preds_xgb[t] + test_preds_lr[t]) / 3
+        test_ensemble = (test_preds_lgb[t] + test_preds_xgb[t] + test_preds_rf[t]) / 3
         test_pred_labels = (test_ensemble > 0.5).astype(int).flatten()
 
         acc = (train_df[t] == oof_pred_labels).mean()
