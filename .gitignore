@@ -1,4 +1,5 @@
 # ignore data files
 data/
 *.parquet
+*.csv
 eda.ipynb
