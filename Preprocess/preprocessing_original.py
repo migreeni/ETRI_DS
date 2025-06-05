@@ -220,5 +220,6 @@ for i in range(1, 11):
 
 
 # 저장시 주석 풀기
+df = df.rename(columns={'timestamp': 'lifelog_date'})
 df.to_csv('merged_df_original.csv', index=False)
 
