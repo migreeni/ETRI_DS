@@ -12,22 +12,32 @@ from statistics import mean
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="joblib")
 
-# data selection
+################################################################## 
+# load data - select 
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
 
-merge_df = pd.read_csv("merged_df_original.csv")
-# merge_df = pd.read_csv("merged_dwt.csv")
+# print('data : original')
+# merge_df = pd.read_csv("merged_df_original.csv")
 
+print('data : dwt')
+merge_df = pd.read_csv("merged_dwt.csv")
+################################################################## 
+
+# usage, amb ignore 
+# print('ignore : usage, amb')
 # merge_df = merge_df.iloc[:,:89]
 
+##################################################################   
+
+merge_df.fillna(-1, inplace=True)
 
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['lifelog_date'])
 train_df['lifelog_date'] = pd.to_datetime(train_df['lifelog_date'])
 submission_df['lifelog_date'] = pd.to_datetime(submission_df['lifelog_date'])
 
-train_merged = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
-submission_merged = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+train_df = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
 
 # encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
 # train_encoded = encoder.fit_transform(train_merged[['subject_id']])

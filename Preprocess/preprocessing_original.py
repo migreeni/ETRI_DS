@@ -5,7 +5,7 @@ from functools import reduce
 
 ## dataset loading ------------------------------------------------
 
-# <ì‚¬ìš©ì•ˆí•¨> 
+# <?‚¬?š©?•ˆ?•¨> 
 # mACStatus = pd.read_parquet(path + 'ch2025_data_items/ch2025_mACStatus.parquet')
 # mScreenStatus = pd.read_parquet(path + 'ch2025_data_items/ch2025_mScreenStatus.parquet')
 # mLight = pd.read_parquet(path + 'ch2025_data_items/ch2025_mLight.parquet')
@@ -40,21 +40,21 @@ mAmbience['timestamp'] = pd.to_datetime(mAmbience['timestamp'])
 ## preprocessing ----------------------------------------------------
 
 
-# 1. mUsageStats : ì•±ë³„ ì‹œê°„í•© -> ì´ ì‚¬ìš©ì‹œê°„
+# 1. mUsageStats : ?•±ë³? ?‹œê°„í•© -> ì´? ?‚¬?š©?‹œê°?
 print("Preprocessing mUsageStats...")
 
-# mUsageStats ë¶ˆëŸ¬ì˜¤ê¸°
+# mUsageStats ë¶ˆëŸ¬?˜¤ê¸?
 mUsageStats = pd.read_parquet(path + 'ch2025_mUsageStats.parquet')
 mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
 
-# ë”•ì…”ë„ˆë¦¬ ë¬¸ìì—´ì„ ë¦¬ìŠ¤íŠ¸ë¡œ ë³€í™˜
+# ?”•?…”?„ˆë¦? ë¬¸ì?—´?„ ë¦¬ìŠ¤?Š¸ë¡? ë³??™˜
 def parse_app_list(x):
     try:
         return ast.literal_eval(x) if isinstance(x, str) else x
     except:
         return []
 
-# ê° rowì—ì„œ app_nameì„ ì»¬ëŸ¼ìœ¼ë¡œ total_timeì„ ê°’ìœ¼ë¡œ ë¶„í•´
+# ê°? row?—?„œ app_name?„ ì»¬ëŸ¼?œ¼ë¡? total_time?„ ê°’ìœ¼ë¡? ë¶„í•´
 expanded_rows = []
 for _, row in mUsageStats.iterrows():
     app_list = parse_app_list(row['m_usage_stats'])
@@ -65,15 +65,15 @@ for _, row in mUsageStats.iterrows():
             row_data[app_name] = app['total_time']
     expanded_rows.append(row_data)
 
-# ë°ì´í„°í”„ë ˆì„ìœ¼ë¡œ ë³€í™˜
+# ?°?´?„°?”„? ˆ?„?œ¼ë¡? ë³??™˜
 prep_mUsageStats = pd.DataFrame(expanded_rows)
 
 
-# 2. mActivity : ì‹œê°„ëŒ€ë³„ ê°€ì¤‘í•©
+# 2. mActivity : ?‹œê°„ë??ë³? ê°?ì¤‘í•©
 print("Preprocessing mActivity...")
 prep_mActivity = mActivity[['subject_id', 'timestamp']].copy()
 prep_mActivity['met_activity'] = 0.0
-activity_to_met = {0: 1.3, 1: 7.2, 2: 2.3, 3: 1.1, 4: 1.0, 5: 1.3, 7: 3.4, 8: 8.0} # ê°€ì¤‘ì¹˜
+activity_to_met = {0: 1.3, 1: 7.2, 2: 2.3, 3: 1.1, 4: 1.0, 5: 1.3, 7: 3.4, 8: 8.0} # ê°?ì¤‘ì¹˜
 
 def get_time_weight(ts):
     hour = ts.hour
@@ -82,7 +82,7 @@ def get_time_weight(ts):
     else: return 1.0
 
 def calc_weighted_met(row):
-    met = activity_to_met.get(mActivity.loc[row.name, 'm_activity'], 1.0)  # ë§¤í•‘ ì—†ìœ¼ë©´ 1.0
+    met = activity_to_met.get(mActivity.loc[row.name, 'm_activity'], 1.0)  # ë§¤í•‘ ?—†?œ¼ë©? 1.0
     weight = get_time_weight(row['timestamp'])
     return met * weight
 
@@ -95,7 +95,7 @@ prep_mActivity = (prep_mActivity
 
 
 
-# 3. mBle : ê°€ê¹Œìš´ ê¸°ê¸°ê°€ ë” ì˜í–¥ì„ ë§ì´ ì£¼ë„ë¡ ê°€ì¤‘í•©
+# 3. mBle : ê°?ê¹Œìš´ ê¸°ê¸°ê°? ?” ?˜?–¥?„ ë§ì´ ì£¼ë„ë¡? ê°?ì¤‘í•©
 print("Preprocessing mBle...")
 mBle['timestamp'] = mBle['timestamp'].dt.floor('10min')
 prep_mBle = mBle[['subject_id', 'timestamp']].copy()
@@ -108,7 +108,7 @@ def sum_ble_rssi(ble_stats):
 prep_mBle['m_wtb_rssi'] = mBle['m_ble'].apply(sum_ble_rssi)
 
 
-# 4. mWifi : ê°€ê¹Œìš´ ê¸°ê¸°ê°€ ë” ì˜í–¥ì„ ë§ì´ ì£¼ë„ë¡ ê°€ì¤‘í•©
+# 4. mWifi : ê°?ê¹Œìš´ ê¸°ê¸°ê°? ?” ?˜?–¥?„ ë§ì´ ì£¼ë„ë¡? ê°?ì¤‘í•©
 print("Preprocessing mWifi...")
 mWifi['timestamp'] = mWifi['timestamp'].dt.floor('10min')
 prep_mWifi = mWifi[['subject_id', 'timestamp']].copy()
@@ -121,19 +121,19 @@ def sum_wifi_rssi(wifi_stats):
 prep_mWifi['m_wtb_rssi'] = mWifi['m_wifi'].apply(sum_wifi_rssi)
 
 
-# 5. wHr : í‰ê· ê°’
+# 5. wHr : ?‰ê· ê°’
 print("Preprocessing wHr...")
 wHr['heart_rate'] = wHr['heart_rate'].apply(lambda x: np.mean(x))
 prep_wHr = (wHr.groupby(['subject_id', 
                          pd.Grouper(key='timestamp', freq='10min')])
             ['heart_rate']
-            # .apply(list) -> í‰ê· ê°’ìœ¼ë¡œ ìˆ˜ì •
+            # .apply(list) -> ?‰ê· ê°’?œ¼ë¡? ?ˆ˜? •
             .mean()
             .reset_index()
         )
 
 
-# 6. wPedo : distance, burned_caloriesë§Œ í‰ê· ê°’
+# 6. wPedo : distance, burned_caloriesë§? ?‰ê· ê°’
 print("Preprocessing wPedo...")
 wPedo['distance'] = wPedo['distance'].astype(float)
 wPedo['burned_calories'] = wPedo['burned_calories'].astype(float)
@@ -144,7 +144,7 @@ prep_wPedo = (wPedo.groupby(['subject_id',
             .reset_index()
         )
 
-# 7. mGps : í‰ê· ê°’
+# 7. mGps : ?‰ê· ê°’
 print("Preprocessing mGps...")
 def mean_gps(row):
     df = pd.DataFrame(list(row))          
@@ -159,7 +159,7 @@ prep_mGps = (mGps_1min.groupby(['subject_id',
                 .reset_index()
             )
 
-# 8. wLight : ì›Œì¹˜ë§Œ ì‚¬ìš©í•˜ê¸°ë¡œ í•¨, í‰ê· ê°’
+# 8. wLight : ?›Œì¹˜ë§Œ ?‚¬?š©?•˜ê¸°ë¡œ ?•¨, ?‰ê· ê°’
 print("Preprocessing wLight...")
 prep_wLight = (wLight
             .groupby(['subject_id', 
@@ -169,7 +169,7 @@ prep_wLight = (wLight
             .reset_index()
         )
 
-# 9. mAmbience : ëª¨ë“  ë¼ë²¨ì„ ì¹¼ëŸ¼ìœ¼ë¡œ ìƒì„±í•˜ì—¬ ì‚¬ìš© -> 10ë¶„ë‹¨ìœ„ í‰ê·  ë° NaNì„ 0ìœ¼ë¡œ ì±„ì›€(ë¯¼ì„ ìˆ˜ì •)
+# 9. mAmbience : ëª¨ë“  ?¼ë²¨ì„ ì¹¼ëŸ¼?œ¼ë¡? ?ƒ?„±?•˜?—¬ ?‚¬?š© -> 10ë¶„ë‹¨?œ„ ?‰ê·? ë°? NaN?„ 0?œ¼ë¡? ì±„ì??(ë¯¼ì„ ?ˆ˜? •)
 def expand_m_ambience(row):
     row_data = {
         'subject_id': row['subject_id'],
@@ -193,7 +193,7 @@ prep_mAmbience = (prep_mAmbience
                      pd.Grouper(key='timestamp', freq='10min')])
                   .mean()
                   .reset_index()
-                  .fillna(0)  # NaNì„ 0ìœ¼ë¡œ ì±„ì›€
+                  .fillna(0)  
                   )
 
 
@@ -219,7 +219,7 @@ for i in range(1, 11):
     df[column_name] = (df['subject_id'] == column_name).astype(int)
 
 
-# ì €ì¥ì‹œ ì£¼ì„ í’€ê¸°
+# ????¥?‹œ ì£¼ì„ ???ê¸?
 df = df.rename(columns={'timestamp': 'lifelog_date'})
 df.to_csv('merged_df_original.csv', index=False)
 

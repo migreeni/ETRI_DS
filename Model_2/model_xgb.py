@@ -10,25 +10,35 @@ from tqdm import tqdm
 
 import lightgbm as lgb
 import xgboost as xgb
+from statistics import mean
 
-# 데이터 로드
+################################################################## 
+# load data - select 
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
 
+# print('data : original')
 # merge_df = pd.read_csv("merged_df_original.csv")
-merge_df = pd.read_csv("merged_dwt.csv")
 
-# usage, amb 사용 안하므로 컬럼을 89까지 슬라이싱
+print('data : dwt')
+merge_df = pd.read_csv("merged_dwt.csv")
+################################################################## 
+
+# usage, amb ignore 
+# print('ignore : usage, amb')
 # merge_df = merge_df.iloc[:,:89]
-merge_df.fillna(-1)
+
+##################################################################   
+
+merge_df.fillna(-1, inplace=True)
 
 # train, submission과 병합
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['lifelog_date'])
 train_df['lifelog_date'] = pd.to_datetime(train_df['lifelog_date'])
 submission_df['lifelog_date'] = pd.to_datetime(submission_df['lifelog_date'])
 
-train_merged = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
-submission_merged = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+train_df = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
 
 # subject_id One-Hot 인코딩
 # encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
@@ -117,26 +127,28 @@ for target in targets:
 
 # 14. 최종 OOF 평가 및 제출 데이터 예측
 print("\nFinal Evaluation on OOF predictions (XGBoost):")
-
+f1_score_list = []
 for t in targets:
     print(f"=== Target: {t} ===")
 
     # 다중 클래스(S1)는 확률 평균 후 argmax
     if t == 'S1':
-        oof_pred_labels = np.argmax(oof_preds_xgb, axis=1)
-        test_pred_labels = np.argmax(test_preds_xgb, axis=1)
+        oof_pred_labels = np.argmax(oof_preds_xgb[t][val_idx], axis=1)
+        test_pred_labels = np.argmax(test_preds_xgb[t][val_idx], axis=1)
 
         acc = (train_df[t] == oof_pred_labels).mean()
-        f1 = f1_score(train_df[t], oof_pred_labels, average='macro')
+        f1 = f1_score(train_df[t].iloc[val_idx], oof_pred_labels, average='macro')
+        f1_score_list.append(f1)
         print(f"Accuracy: {acc:.4f}, Macro F1: {f1:.4f}")
 
     # 이진 분류는 확률 평균 후 0.5 기준 이진화
     else:
-        oof_pred_labels = (oof_preds_xgb > 0.5).astype(int)
-        test_pred_labels = (test_preds_xgb > 0.5).astype(int).flatten()
+        oof_pred_labels = (oof_preds_xgb[t][val_idx] > 0.5).astype(int)
+        test_pred_labels = (test_preds_xgb[t][val_idx] > 0.5).astype(int).flatten()
 
         acc = (train_df[t] == oof_pred_labels).mean()
-        f1 = f1_score(train_df[t], oof_pred_labels)
+        f1 = f1_score(train_df[t].iloc[val_idx], oof_pred_labels)
+        f1_score_list.append(f1)
         print(f"Accuracy: {acc:.4f}, F1: {f1:.4f}")
 
     # 앙상블 예측값을 원래 컬럼명으로 저장
@@ -145,7 +157,6 @@ for t in targets:
     submission_df[t] = test_pred_labels
 
 # 제출 파일 저장
+print(f"Total F1: {mean(f1_score_list):.4f}")
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
-# index 제거
-submission_df = submission_df.iloc[:,1:]
 submission_df.to_csv('dwt_xgb.csv', index=False)

@@ -10,25 +10,35 @@ from tqdm import tqdm
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
+from statistics import mean
 
-
-# 데이터 로드
+################################################################## 
+# load data - select 
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
 
-merge_df = pd.read_csv("merged_df_original.csv")
-# merge_df = pd.read_csv("merged_dwt.csv")
+# print('data : original')
+# merge_df = pd.read_csv("merged_df_original.csv")
 
-# usage, amb 사용 안하므로 컬럼을 89까지 슬라이싱
-# merge_df = merge_df.iloc[:,:89]
+print('data : dwt')
+merge_df = pd.read_csv("merged_dwt.csv")
+################################################################## 
+
+# usage, amb ignore 
+print('ignore : usage, amb')
+merge_df = merge_df.iloc[:,:89]
+
+##################################################################  
+ 
+merge_df.fillna(-1, inplace=True)   
 
 # train, submission과 병합
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['lifelog_date'])
 train_df['lifelog_date'] = pd.to_datetime(train_df['lifelog_date'])
 submission_df['lifelog_date'] = pd.to_datetime(submission_df['lifelog_date'])
 
-train_merged = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
-submission_merged = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+train_df = pd.merge(train_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
+submission_df = pd.merge(submission_df, merge_df, how='left', on=['subject_id', 'lifelog_date'])
 # train_merged = train_merged.drop(columns='date')
 # submission_merged = submission_merged.drop(columns='date')
 
@@ -42,8 +52,8 @@ submission_merged = pd.merge(submission_df, merge_df, how='left', on=['subject_i
 # train_df = pd.concat([train_merged, train_id_ohe], axis=1)
 # submission_df = pd.concat([submission_merged, submission_id_ohe], axis=1)
 
-# train_df.columns = train_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
-# submission_df.columns = submission_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
+train_df.columns = train_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
+submission_df.columns = submission_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
 
 # 10. 타깃 및 입력 정의
 targets = ['Q1', 'Q2', 'Q3', 'S1', 'S2', 'S3']
@@ -231,6 +241,7 @@ for target in targets:
 # 14. 최종 OOF 평가 및 제출 데이터 예측 
 print("\nFinal Evaluation on OOF predictions (Ensemble of LightGBM, XGBoost, Random Forest):")
 
+f1_score_list = []
 for t in targets:
     print(f"=== Target: {t} ===")
 
@@ -244,6 +255,7 @@ for t in targets:
 
         acc = (train_df[t] == oof_pred_labels).mean()
         f1 = f1_score(train_df[t], oof_pred_labels, average='macro')
+        f1_score_list.append(f1)
         print(f"Accuracy: {acc:.4f}, Macro F1: {f1:.4f}")
 
     # 이진 분류는 확률 평균 후 0.5 기준 이진화
@@ -256,11 +268,13 @@ for t in targets:
 
         acc = (train_df[t] == oof_pred_labels).mean()
         f1 = f1_score(train_df[t], oof_pred_labels)
+        f1_score_list.append(f1)
         print(f"Accuracy: {acc:.4f}, F1: {f1:.4f}")
 
     # 앙상블 예측값을 원래 컬럼명으로 저장
     submission_df[t] = test_pred_labels
 
 # 제출 파일 저장
+print(f"Total F1: {mean(f1_score_list):.4f}")
 submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
 submission_df.to_csv('dwt_ensemble.csv', index=False)
