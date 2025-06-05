@@ -14,7 +14,7 @@ import xgboost as xgb
 # 데이터 로드
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
-merge_df = pd.read_csv("Model test_2/merged_dwt6.csv")
+merge_df = pd.read_csv("merged_dwt.csv")
 # train, submission과 병합
 merge_df['lifelog_date'] = pd.to_datetime(merge_df['lifelog_date'])
 train_df['lifelog_date'] = pd.to_datetime(train_df['lifelog_date'])

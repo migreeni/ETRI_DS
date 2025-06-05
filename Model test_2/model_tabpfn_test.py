@@ -13,8 +13,10 @@ from tabpfn import TabPFNClassifier
 train_df = pd.read_csv("ch2025_metrics_train.csv")
 submission_df = pd.read_csv("ch2025_submission_sample.csv")
 merge_df = pd.read_csv("merged_df_original.csv")
+
 # usage, amb 사용 안하므로 컬럼을 89까지 슬라이싱
 merge_df = merge_df.iloc[:,:89]
+
 # lifelog_date 컬럼 없다 나올 시 활성화
 merge_df = merge_df.rename(columns={'timestamp': 'lifelog_date'})
 # train, submission과 병합
