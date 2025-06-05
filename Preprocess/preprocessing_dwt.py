@@ -3,44 +3,53 @@ import numpy as np
 import pywt
 from scipy.stats import entropy
 import ast
+import re
 
 ## dataset loading ------------------------------------------------
+path = 'data/'
 
 # DataFrame 불러오기
-mACStatus = pd.read_parquet('ch2025_mACStatus.parquet')
+mACStatus = pd.read_parquet(path + 'ch2025_mACStatus.parquet')
 mACStatus['timestamp'] = pd.to_datetime(mACStatus['timestamp'])
-mActivity = pd.read_parquet('ch2025_mActivity.parquet')
+mActivity = pd.read_parquet(path + 'ch2025_mActivity.parquet')
 mActivity['timestamp'] = pd.to_datetime(mActivity['timestamp'])
-mAmbience = pd.read_parquet('ch2025_mAmbience.parquet')
+mAmbience = pd.read_parquet(path + 'ch2025_mAmbience.parquet')
 mAmbience['timestamp'] = pd.to_datetime(mAmbience['timestamp'])
-mBle = pd.read_parquet('ch2025_mBle.parquet')
+mBle = pd.read_parquet(path + 'ch2025_mBle.parquet')
 mBle['timestamp'] = pd.to_datetime(mBle['timestamp'])
-mGps = pd.read_parquet('ch2025_mGps.parquet')
+mGps = pd.read_parquet(path + 'ch2025_mGps.parquet')
 mGps['timestamp'] = pd.to_datetime(mGps['timestamp'])
-mLight = pd.read_parquet('ch2025_mLight.parquet')
+mLight = pd.read_parquet(path + 'ch2025_mLight.parquet')
 mLight['timestamp'] = pd.to_datetime(mLight['timestamp'])
-mScreenStatus = pd.read_parquet('ch2025_mScreenStatus.parquet')
+mScreenStatus = pd.read_parquet(path + 'ch2025_mScreenStatus.parquet')
 mScreenStatus['timestamp'] = pd.to_datetime(mScreenStatus['timestamp'])
-mUsageStats = pd.read_parquet('ch2025_mUsageStats.parquet')
+mUsageStats = pd.read_parquet(path + 'ch2025_mUsageStats.parquet')
 mUsageStats['timestamp'] = pd.to_datetime(mUsageStats['timestamp'])
-mWifi = pd.read_parquet('ch2025_mWifi.parquet')
+mWifi = pd.read_parquet(path + 'ch2025_mWifi.parquet')
 mWifi['timestamp'] = pd.to_datetime(mWifi['timestamp'])
-wHr = pd.read_parquet('ch2025_wHr.parquet')
+wHr = pd.read_parquet(path + 'ch2025_wHr.parquet')
 wHr['timestamp'] = pd.to_datetime(wHr['timestamp'])
-wLight = pd.read_parquet('ch2025_wLight.parquet')
+wLight = pd.read_parquet(path + 'ch2025_wLight.parquet')
 wLight['timestamp'] = pd.to_datetime(wLight['timestamp'])
-wPedo = pd.read_parquet('ch2025_wPedo.parquet')
+wPedo = pd.read_parquet(path + 'ch2025_wPedo.parquet')
 wPedo['timestamp'] = pd.to_datetime(wPedo['timestamp'])
 
 ## preprocessing ----------------------------------------------------
 
 # 1. mUsageStats
 print("Preprocessing mUsageStats...")
+
 def parse_app_list(x):
     try:
         return ast.literal_eval(x) if isinstance(x, str) else x
     except:
         return []
+
+# 특수문자 및 기호를 제거하는 함수
+def clean_app_name(app_name):
+    # 모든 특수문자 및 기호를 제거하고 알파벳, 숫자, 공백, _, - 만 허용
+    cleaned_name = re.sub(r'[^a-zA-Z0-9\s_-가-힣]', '', app_name.strip())  # 알파벳, 숫자, 공백, _, - 만 허용
+    return cleaned_name
 
 # 각 row에서 app_name을 컬럼으로 total_time을 값으로 분해
 expanded_rows = []
@@ -49,12 +58,11 @@ for _, row in mUsageStats.iterrows():
     row_data = {'subject_id': row['subject_id'], 'timestamp': row['timestamp']}
     for app in app_list:
         if 'app_name' in app and 'total_time' in app:
-            app_name = app['app_name'].strip()
+            app_name = clean_app_name(app['app_name'])  # 한글 및 특수문자 처리
             row_data[app_name] = app['total_time']
     expanded_rows.append(row_data)
 
 mUsageStats_expanded = pd.DataFrame(expanded_rows)
-
 
 # 2. mActivity : 시간대별 가중합
 print("Preprocessing mActivity...")
@@ -84,10 +92,8 @@ prep_mActivity['met_activity'] = prep_mActivity.apply(
 # Keep only final columns
 prep_mActivity = prep_mActivity[['subject_id', 'timestamp', 'met_activity']]
 
-
 # 3. mBle : 가까운 기기가 더 영향을 많이 주도록 가중합
 print("Preprocessing mBle...")
-import numpy as np
 # Extract 'subject_id' and 'timestamp' columns
 prep_mBle = mBle[['subject_id', 'timestamp']].copy()
 
@@ -96,7 +102,6 @@ def weighted_ble_rssi(ble_stats):
     return sum(np.exp(ble.get('rssi', 0) / 10) for ble in ble_stats)
 
 prep_mBle['wb_rssi'] = mBle['m_ble'].apply(weighted_ble_rssi)
-
 
 # 4. mWifi : 가까운 기기가 더 영향을 많이 주도록 가중합
 print("Preprocessing mWifi...")
@@ -109,7 +114,6 @@ def weighted_wifi_rssi(wifi_stats):
 
 prep_mWifi['ww_rssi'] = mWifi['m_wifi'].apply(weighted_wifi_rssi)
 
-
 # 5. wHr : 평균값
 print("Preprocessing wHr...")
 prep_wHr = wHr[['subject_id', 'timestamp']].copy()
@@ -117,14 +121,12 @@ prep_wHr = wHr[['subject_id', 'timestamp']].copy()
 # Calculate average heart rate for each row and store in 'avg_heart_rate'
 prep_wHr['avg_heart_rate'] = wHr['heart_rate'].apply(lambda x: np.mean(x))
 
-
 # 6. wPedo
 print("Preprocessing wPedo...")
 prep_wPedo = wPedo[['subject_id', 'timestamp']].copy()
 
 # Keep only subject_id, timestamp, distance, and burned_calories
 prep_wPedo = wPedo[['subject_id', 'timestamp', 'distance', 'burned_calories']].copy()
-
 
 # 7. mGps
 print("Preprocessing mGps...")
@@ -141,11 +143,9 @@ prep_mGps['avg_longitude'] = mGps['m_gps'].apply(lambda gps: calc_gps_avgs(gps, 
 prep_mGps['avg_altitude'] = mGps['m_gps'].apply(lambda gps: calc_gps_avgs(gps, 'altitude'))
 prep_mGps['avg_speed'] = mGps['m_gps'].apply(lambda gps: calc_gps_avgs(gps, 'speed'))
 
-
 # 8. wLight : 워치만 사용하기로 함
 print("Preprocessing wLight...")
 prep_wLight = wLight
-
 
 # 9. mAmbience
 print("Preprocessing mAmbience...")
@@ -173,7 +173,6 @@ def expand_m_ambience(row):
 # 변환 실행
 mAmbience_expanded = pd.DataFrame([expand_m_ambience(row) for _, row in mAmbience.iterrows()])
 
-
 # dwt ---------------------------------------------------------
 # DWT 요약 함수 정의
 def dwt_summary(series, wavelet='db1'):
@@ -195,11 +194,11 @@ def dwt_summary(series, wavelet='db1'):
 # DWT 적용 함수 정의
 def create_dwt_features(df, name):
     df = df.copy()
-    df['date'] = pd.to_datetime(df['timestamp']).dt.date
-    value_cols = [col for col in df.columns if col not in ['subject_id', 'timestamp', 'date']]
+    df['lifelog_date'] = pd.to_datetime(df['timestamp']).dt.date
+    value_cols = [col for col in df.columns if col not in ['subject_id', 'timestamp', 'lifelog_date']]
     feature_rows = []
-    for (sid, date), group in df.groupby(['subject_id', 'date']):
-        row = {'subject_id': sid, 'date': date}
+    for (sid, lifelog_date), group in df.groupby(['subject_id', 'lifelog_date']):
+        row = {'subject_id': sid, 'lifelog_date': lifelog_date}
         for col in value_cols:
             features = dwt_summary(group[col])
             row.update({f"{name}_{col}_{k}": v for k, v in features.items()})
@@ -209,7 +208,6 @@ def create_dwt_features(df, name):
 # 각 데이터셋별 DWT 피처 생성
 dwt_dfs = []
 datasets = {
-    'mUsageStats': mUsageStats_expanded,
     'mActivity': prep_mActivity,
     'mBle': prep_mBle,
     'mWifi': prep_mWifi,
@@ -217,6 +215,7 @@ datasets = {
     'wPedo': prep_wPedo,
     'mGps': prep_mGps,
     'wLight': prep_wLight,
+    'mUsageStats': mUsageStats_expanded,
     'mAmbience': mAmbience_expanded
 }
 
@@ -224,9 +223,9 @@ for name, df in datasets.items():
     dwt_df = create_dwt_features(df, name)
     dwt_dfs.append(dwt_df)
 
-# subject_id, date 기준으로 병합
+# subject_id, lifelog_date 기준으로 병합
 from functools import reduce
-merged_dwt_df = reduce(lambda left, right: pd.merge(left, right, on=['subject_id', 'date'], how='outer'), dwt_dfs)
+merged_dwt_df = reduce(lambda left, right: pd.merge(left, right, on=['subject_id', 'lifelog_date'], how='outer'), dwt_dfs)
 
 
 # 결측치 처리
@@ -237,5 +236,9 @@ for i in range(1, 11):
     column_name = f'id{i:02d}'  
     df[column_name] = (df['subject_id'] == column_name).astype(int)
 
+# 특수문자 및 공백을 `_`로 변환하는 처리 추가
+merged_dwt_df.columns = merged_dwt_df.columns.str.replace(r'[^A-Za-z0-9_]+', '_', regex=True)
+
 # 파일로 저장
 merged_dwt_df.to_csv("merged_dwt.csv", index=False)
+
