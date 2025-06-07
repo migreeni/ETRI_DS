@@ -1,10 +1,14 @@
-# =========================================================
-# 0. 라이브러리
-# =========================================================
-import os, copy, json, random, math
+# 🚀 GRU with Optuna Hyperparameter Tuning (per‑target)
+# - Tune hidden size, layers, dropout, learning rate, weight decay, epochs
+# - Use GroupKFold inside Optuna objective (validation F1 ↑)
+# - Train final model with best params, predict test, save submission.csv
+# Requirements: pip install optuna
+
+import os, copy, random, warnings
+warnings.filterwarnings('ignore')
+
 import numpy as np
 import pandas as pd
-from tqdm import trange
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import StandardScaler
@@ -13,33 +17,31 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
+import optuna                          # ✨ NEW
+
 SEED = 42
 random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
 
-# =========================================================
-# 1. 데이터 로드
-# =========================================================
 df_zero_filled = pd.read_csv('../data/merged_df_cwj_tozero.csv')
 trainset = pd.read_csv('../data/ch2025_metrics_train.csv')
-testset  = pd.read_csv('../data/ch2025_submission_sample.csv')   # id/date 컬럼만 사용
+testset  = pd.read_csv('../data/ch2025_submission_sample.csv')
 
-# ---------------------------------------------------------
-# 1-1. 시계열 전처리
-# ---------------------------------------------------------
+TARGETS = ['Q1','Q2','Q3','S1','S2','S3']
+
 df_zero_filled['timestamp']   = pd.to_datetime(df_zero_filled['timestamp'])
 df_zero_filled['lifelog_date'] = df_zero_filled['timestamp'].dt.date.astype(str)
 
-DROP_COLS = ['timestamp', 'subject_id', 'lifelog_date']
+DROP_COLS   = ['timestamp','subject_id','lifelog_date']
 SENSOR_COLS = [c for c in df_zero_filled.columns if c not in DROP_COLS]
+MAX_SEQ     = 144   # 10‑min resolution
 
-MAX_SEQ = 144    # 10-min × 24 h 기준
+# ---------- utils ----------
 
 def build_sequences(df):
-    """Return dict key->np.ndarray(seq_len, n_feat)"""
     seqs = {}
-    for (sid, day), g in df.groupby(['subject_id', 'lifelog_date']):
+    for (sid, day), g in df.groupby(['subject_id','lifelog_date']):
         g = g.sort_values('timestamp')
-        x = g[SENSOR_COLS].to_numpy(np.float32)
+        x = g[SENSOR_COLS].astype('float32').to_numpy()
         if len(x) > MAX_SEQ: x = x[:MAX_SEQ]
         if len(x) < MAX_SEQ:
             x = np.concatenate([x, np.zeros((MAX_SEQ-len(x), x.shape[1]), np.float32)])
@@ -48,166 +50,134 @@ def build_sequences(df):
 
 SEQ_DICT = build_sequences(df_zero_filled)
 
-# ---------------------------------------------------------
-# 1-2. 학습/추론용 텐서 변환
-# ---------------------------------------------------------
-TARGETS = ['Q1','Q2','Q3','S1','S2','S3']   # S1 = 3-class, others binary
 
 def rows_to_xy(df):
     xs, ys, groups = [], [], []
     for _, r in df.iterrows():
-        key = (r.subject_id, r.lifelog_date)
-        if key not in SEQ_DICT:        # missing sequence
+        k = (r.subject_id, r.lifelog_date)
+        if k not in SEQ_DICT:
             continue
-        xs.append( SEQ_DICT[key] )
-        ys.append( r[TARGETS].to_list() )
-        groups.append( r.subject_id )  # fold split anchor
+        xs.append(SEQ_DICT[k])
+        ys.append(r[TARGETS].to_list())
+        groups.append(r.subject_id)
     return np.stack(xs), np.array(ys, np.int64), np.array(groups)
 
 X_all, y_all, group_all = rows_to_xy(trainset)
-X_test, _, _ = rows_to_xy(testset)     # y_dummy ignored
+X_test, _, _            = rows_to_xy(testset)
 
-# ---------------------------------------------------------
-# 1-3. 스케일링 (training set 기준)
-# ---------------------------------------------------------
+# scale
 scaler = StandardScaler().fit(X_all.reshape(-1, X_all.shape[-1]))
-def scale(x):
-    shp = x.shape
-    return scaler.transform(x.reshape(-1, shp[-1])).reshape(shp)
+X_all  = scaler.transform(X_all.reshape(-1, X_all.shape[-1])).reshape(X_all.shape)
+X_test = scaler.transform(X_test.reshape(-1, X_test.shape[-1])).reshape(X_test.shape)
 
-X_all  = scale(X_all)
-X_test = scale(X_test)
-
-# =========================================================
-# 2. Dataset / DataLoader
-# =========================================================
+# ---------- dataset ----------
 class SleepDS(Dataset):
     def __init__(self, X, y=None):
         self.X = torch.tensor(X, dtype=torch.float32)
         self.y = None if y is None else torch.tensor(y, dtype=torch.long)
-    def __len__(self):  return len(self.X)
-    def __getitem__(self, i):
-        if self.y is None: return self.X[i]
-        return self.X[i], self.y[i]
+    def __len__(self): return len(self.X)
+    def __getitem__(self, idx):
+        return self.X[idx] if self.y is None else (self.X[idx], self.y[idx])
 
-# =========================================================
-# 3. GRU 모델 (멀티-헤드)
-# =========================================================
-class GRUNet(nn.Module):
-    def __init__(self, n_feat, hid=128, n_layers=2, drop=0.3):
+# ---------- model ----------
+class SingleHeadGRU(nn.Module):
+    def __init__(self, inp_dim, out_dim, hidden, layers, drop):
         super().__init__()
-        self.gru = nn.GRU(n_feat, hid, n_layers, batch_first=True, dropout=drop)
-        self.heads = nn.ModuleList([
-            nn.Linear(hid, 2),   # Q1
-            nn.Linear(hid, 2),   # Q2
-            nn.Linear(hid, 2),   # Q3
-            nn.Linear(hid, 3),   # S1 (3-class)
-            nn.Linear(hid, 2),   # S2
-            nn.Linear(hid, 2)    # S3
-        ])
+        self.gru = nn.GRU(inp_dim, hidden, layers, batch_first=True, dropout=drop)
+        self.fc  = nn.Linear(hidden, out_dim)
     def forward(self, x):
         _, h = self.gru(x)
-        h = h[-1]                 # last layer output (B,H)
-        return [head(h) for head in self.heads]   # list of logits
+        return self.fc(h[-1])
 
-# loss per task
-LOSS_FNS = [
-    nn.CrossEntropyLoss(), nn.CrossEntropyLoss(), nn.CrossEntropyLoss(),
-    nn.CrossEntropyLoss(), nn.CrossEntropyLoss(), nn.CrossEntropyLoss()
-]
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+BATCH_SIZE_DEFAULT = 64
+N_FOLD = 5
 
-# =========================================================
-# 4. k-fold validation (subject 그룹 유지)
-# =========================================================
-N_FOLD     = 5
-EPOCH_MAX  = 50
-BATCH_SIZE = 64
-DEVICE     = 'cuda' if torch.cuda.is_available() else 'cpu'
+# --------------------------------------------------
+# Optuna tuning per target
+# --------------------------------------------------
+preds_dict = {}
 
-best_epochs = []          # fold별 best epoch 저장
+for idx_target, target in enumerate(TARGETS):
+    print(f"\n🎯 Optimizing {target}")
+    y_target = y_all[:, idx_target]
+    out_dim  = 3 if target == 'S1' else 2
+    criterion = nn.CrossEntropyLoss()
 
-gkf = GroupKFold(n_splits=N_FOLD)
-for fold, (tr_idx, val_idx) in enumerate(gkf.split(X_all, y_all, group_all), 1):
-    print(f'\n=== Fold {fold}/{N_FOLD} ===')
-    tr_loader = DataLoader(SleepDS(X_all[tr_idx], y_all[tr_idx]),
-                           batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(SleepDS(X_all[val_idx], y_all[val_idx]),
-                            batch_size=BATCH_SIZE, shuffle=False)
+    def objective(trial):
+        # hyperparameters to tune
+        hidden = trial.suggest_int('hidden', 64, 256, step=64)
+        layers = trial.suggest_int('layers', 1, 3)
+        drop   = trial.suggest_float('drop', 0.1, 0.5, step=0.1)
+        lr     = trial.suggest_loguniform('lr', 1e-4, 1e-2)
+        wd     = trial.suggest_loguniform('wd', 1e-5, 1e-2)
+        epochs = trial.suggest_int('epochs', 10, 40, step=10)
 
-    model = GRUNet(n_feat=X_all.shape[-1]).to(DEVICE)
-    opt   = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=1e-2)
+        gkf = GroupKFold(n_splits=N_FOLD)
+        f1_scores = []
 
-    best_f1, best_ep, best_state = -1, 0, None
-    for epoch in range(1, EPOCH_MAX+1):
-        # --- train ---
-        model.train()
-        for xb, yb in tr_loader:
+        for tr_idx, val_idx in gkf.split(X_all, y_target, group_all):
+            model = SingleHeadGRU(X_all.shape[-1], out_dim, hidden, layers, drop).to(DEVICE)
+            opt   = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+            tr_loader  = DataLoader(SleepDS(X_all[tr_idx], y_target[tr_idx]), batch_size=BATCH_SIZE_DEFAULT, shuffle=True)
+            val_loader = DataLoader(SleepDS(X_all[val_idx], y_target[val_idx]), batch_size=BATCH_SIZE_DEFAULT)
+
+            # training loop
+            for epoch in range(epochs):
+                model.train()
+                for xb, yb in tr_loader:
+                    xb, yb = xb.to(DEVICE), yb.to(DEVICE)
+                    loss = criterion(model(xb), yb)
+                    opt.zero_grad(); loss.backward(); opt.step()
+
+            # validation
+            model.eval(); y_true, y_pred = [], []
+            with torch.no_grad():
+                for xb, yb in val_loader:
+                    preds = model(xb.to(DEVICE)).argmax(1).cpu().numpy()
+                    y_pred.extend(preds); y_true.extend(yb.numpy())
+            f1_scores.append(f1_score(y_true, y_pred, average='macro'))
+
+        return float(np.mean(f1_scores))
+
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=20, timeout=None)  # 🕑 adjust n_trials
+    best_params = study.best_params
+    print('Best params ->', best_params, 'Best F1 ->', study.best_value)
+
+    # ---------- train final model with best params ----------
+    hidden = best_params['hidden']
+    layers = best_params['layers']
+    drop   = best_params['drop']
+    lr     = best_params['lr']
+    wd     = best_params['wd']
+    epochs = best_params['epochs']
+
+    model_final = SingleHeadGRU(X_all.shape[-1], out_dim, hidden, layers, drop).to(DEVICE)
+    opt_final   = torch.optim.AdamW(model_final.parameters(), lr=lr, weight_decay=wd)
+    full_loader = DataLoader(SleepDS(X_all, y_target), batch_size=BATCH_SIZE_DEFAULT, shuffle=True)
+
+    for _ in range(epochs):
+        model_final.train()
+        for xb, yb in full_loader:
             xb, yb = xb.to(DEVICE), yb.to(DEVICE)
-            logits = model(xb)
-            loss = sum( LOSS_FNS[k](logits[k], yb[:,k]) for k in range(6) )
-            opt.zero_grad(); loss.backward(); opt.step()
+            loss = criterion(model_final(xb), yb)
+            opt_final.zero_grad(); loss.backward(); opt_final.step()
 
-        # --- validation ---
-        model.eval()
-        y_true, y_pred = [[] for _ in range(6)], [[] for _ in range(6)]
-        with torch.no_grad():
-            for xb, yb in val_loader:
-                logits = model(xb.to(DEVICE))
-                for k in range(6):
-                    preds = logits[k].argmax(1).cpu().numpy()
-                    y_pred[k].extend(preds)
-                    y_true[k].extend(yb[:,k].numpy())
-        f1s = [f1_score(y_true[k], y_pred[k], average='macro') for k in range(6)]
-        mac_f1 = np.mean(f1s)
-        print(f'E{epoch:02d}  F1={mac_f1:.4f}', end='\r')
+    # ---------- predict test ----------
+    model_final.eval(); preds = []
+    with torch.no_grad():
+        for xb in DataLoader(SleepDS(X_test), batch_size=BATCH_SIZE_DEFAULT):
+            preds.extend(model_final(xb.to(DEVICE)).argmax(1).cpu().numpy())
+    preds_dict[target] = preds
 
-        if mac_f1 > best_f1:
-            best_f1, best_ep = mac_f1, epoch
-            best_state = copy.deepcopy(model.state_dict())
-    print(f' -> best F1={best_f1:.4f} @ epoch {best_ep}')
-    best_epochs.append(best_ep)
-
-# ---------------------------------------------------------
-# 4-1. 최적 epoch 결정 (평균 반올림)
-# ---------------------------------------------------------
-BEST_EPOCH = int(round(np.mean(best_epochs)))
-print('\nSelected BEST_EPOCH =', BEST_EPOCH)
-
-# =========================================================
-# 5. 전체 trainset으로 재학습 (BEST_EPOCH), test 예측
-# =========================================================
-full_loader = DataLoader(SleepDS(X_all, y_all),
-                         batch_size=BATCH_SIZE, shuffle=True)
-test_loader = DataLoader(SleepDS(X_test),
-                         batch_size=BATCH_SIZE, shuffle=False)
-
-model_final = GRUNet(n_feat=X_all.shape[-1]).to(DEVICE)
-opt = torch.optim.AdamW(model_final.parameters(), lr=3e-4, weight_decay=1e-2)
-
-for epoch in trange(1, BEST_EPOCH+1, desc='Final-train'):
-    model_final.train()
-    for xb, yb in full_loader:
-        xb, yb = xb.to(DEVICE), yb.to(DEVICE)
-        logits = model_final(xb)
-        loss = sum( LOSS_FNS[k](logits[k], yb[:,k]) for k in range(6) )
-        opt.zero_grad(); loss.backward(); opt.step()
-
-# --- inference ---
-model_final.eval()
-preds_all = [[] for _ in range(6)]
-with torch.no_grad():
-    for xb in test_loader:
-        logits = model_final(xb.to(DEVICE))
-        for k in range(6):
-            preds_all[k].extend( logits[k].argmax(1).cpu().numpy() )
-
-# =========================================================
-# 6. submission 생성
-# =========================================================
+# --------------------------------------------------
+# Build submission
+# --------------------------------------------------
 sub = testset[['subject_id','sleep_date','lifelog_date']].copy()
-for k,t in enumerate(TARGETS):
-    sub[t] = preds_all[k]
+for t in TARGETS:
+    sub[t] = preds_dict[t]
 
-SAVE_PATH = '../data/submission.csv'
+SAVE_PATH = '../data/submission_optuna.csv'
 sub.to_csv(SAVE_PATH, index=False)
 print('✅ submission saved ->', SAVE_PATH)
