@@ -39,9 +39,9 @@ def main(args):
     train_df = pd.read_csv("ch2025_metrics_train.csv")
     submission_df = pd.read_csv("ch2025_submission_sample.csv")
     if select_data == 'original' :
-        merge_df = pd.read_csv("merged_original.csv")
+        merge_df = pd.read_csv("merged_original_final.csv")
     elif select_data == 'dwt' : 
-        merge_df = pd.read_csv("merged_dwt.csv")
+        merge_df = pd.read_csv("merged_dwt_final.csv")
     else :
         raise Exception("Data Error")
         
@@ -142,6 +142,9 @@ def main(args):
                     objective='multiclass' if num_class else 'binary',
                     n_estimators=1000,
                     class_weight='balanced' if num_class is None else None,
+                    min_data_in_leaf=5,
+                    min_gain_to_split=0.0,
+                    max_depth=6,
                     random_state=42 + fold
                 )
                 callbacks = [
@@ -262,7 +265,6 @@ def main(args):
 
     print(f"\nMaking predictions for submission data {select_model}:")
     for t in targets:
-        print(f"Predicting target: {t}")
         if t == 'S1':
             test_pred_labels = np.argmax(test_preds[t], axis=1)
         else:
