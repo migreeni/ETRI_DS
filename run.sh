@@ -3,8 +3,8 @@
 # sh파일 실행시 리눅스(맥)은 아무거나, 윈도우는 반드시 git bash에 입력할 것
 
 # 1. preprocessed
-python preprocess_original_final.py
-python preprocess_dwt_final.py
+# python preprocess_original_final.py
+# python preprocess_dwt_final.py
 
 # 2. prediction for original data
 python main.py -d 'original' -m 'rf'

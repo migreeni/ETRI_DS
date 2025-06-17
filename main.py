@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 from statistics import mean
 from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score
 from sklearn.utils.class_weight import compute_sample_weight
 
@@ -22,7 +23,7 @@ model : rf, lgbm, xgb, cat, lr, ensemble, stacking
 '''
 
 parser = argparse.ArgumentParser(description='Sleep Quality Prediction given Lifelog Data')
-parser.add_argument('-m', '--model', type=str, default='rf')
+parser.add_argument('-m', '--model', type=str, default='lgbm')
 parser.add_argument('-d', '--data', type=str, default='original')
 args = parser.parse_args()
 
@@ -117,6 +118,11 @@ def main(args):
             X_train, y_train = X.iloc[train_idx], train_df[t].iloc[train_idx]
             X_val, y_val = X.iloc[val_idx], train_df[t].iloc[val_idx]
 
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+            X_val_scaled = scaler.transform(X_val)
+            submission_X_scaled = scaler.transform(submission_X)
+
             # unbalanced label -> weighted fitting
             if num_class is None:
                 class_counts = y_train.value_counts()
@@ -134,7 +140,7 @@ def main(args):
                     random_state=42 + fold,
                     class_weight='balanced' if num_class is None else None
                 )
-                model.fit(X_train, y_train, sample_weight=sample_weight)
+                model.fit(X_train_scaled, y_train, sample_weight=sample_weight)
 
             # 2. lightgbm
             elif select_model == 'lgbm':
@@ -151,9 +157,9 @@ def main(args):
                     early_stopping(stopping_rounds=50, verbose=True),
                     log_evaluation(period=10)
                 ]
-
+                
                 model.fit(
-                    X_train, y_train,
+                    X_train_scaled, y_train,
                     sample_weight=sample_weight,
                     eval_set=[(X_val, y_val)],
                     callbacks=callbacks
@@ -174,8 +180,8 @@ def main(args):
                     )
 
                 model.fit(
-                    X_train, y_train,
-                    eval_set=[(X_val, y_val)],
+                    X_train_scaled, y_train,
+                    eval_set=[(X_val_scaled, y_val)],
                     sample_weight=sample_weight,
                     verbose=100
                 )
@@ -190,8 +196,8 @@ def main(args):
                     random_seed=42 + fold
                 )
                 model.fit(
-                    X_train, y_train,
-                    eval_set=(X_val, y_val),
+                    X_train_scaled, y_train,
+                    eval_set=(X_val_scaled, y_val),
                     sample_weight=sample_weight
                 )
 
@@ -199,10 +205,11 @@ def main(args):
             elif select_model == 'lr':
                 model = LogisticRegression(
                     class_weight='balanced' if num_class is None else None,
-                    max_iter=1000,
+                    max_iter=2000,
+                    solver='lbfgs',
                     random_state=42 + fold
                 )
-                model.fit(X_train, y_train, sample_weight=sample_weight)
+                model.fit(X_train_scaled, y_train, sample_weight=sample_weight)
 
             # 6. ensemble : xgb + lgbm + rf, voting : soft
             elif select_model == 'ensemble':
@@ -214,7 +221,7 @@ def main(args):
                     estimators=[('rf', rf), ('lgbm', lgbm), ('xgb', xgb)],
                     voting='soft'
                 )
-                model.fit(X_train, y_train, sample_weight=sample_weight)
+                model.fit(X_train_scaled, y_train, sample_weight=sample_weight)
 
             # 7. stacking : xgb + lgbm + rf, meta : lr
             elif select_model == 'stacking':
@@ -222,30 +229,30 @@ def main(args):
                 base_models = [
                     ('rf', RandomForestClassifier(n_estimators=200, random_state=42)),
                     ('lgbm', LGBMClassifier(n_estimators=200, random_state=42)),
-                    ('xgb', XGBClassifier(n_estimators=200, random_state=42, use_label_encoder=False, eval_metric=metric))
+                    ('xgb', XGBClassifier(n_estimators=200, random_state=42, eval_metric=metric))
                 ]
                 meta_model = LogisticRegression(max_iter=1000)
 
                 model = StackingClassifier(estimators=base_models, final_estimator=meta_model)
-                model.fit(X_train, y_train, sample_weight=sample_weight)
+                model.fit(X_train_scaled, y_train, sample_weight=sample_weight)
 
             else : 
                 raise Exception("Model Error")
 
             # fold validation 
             if t == 'S1':
-                pred_val = model.predict_proba(X_val)
+                pred_val = model.predict_proba(X_val_scaled)
                 oof_preds[t][val_idx, :] = pred_val
             else:
-                pred_val = model.predict(X_val)
+                pred_val = model.predict(X_val_scaled)
                 oof_preds[t][val_idx] = pred_val
 
             # submission
             if t == 'S1':
-                pred_test = model.predict_proba(submission_X)
+                pred_test = model.predict_proba(submission_X_scaled)
                 test_preds[t] += pred_test / n_splits
             else:
-                pred_test = model.predict(submission_X)
+                pred_test = model.predict(submission_X_scaled)
                 test_preds[t] += pred_test / n_splits
 
     # --- OOF F1 score ---
@@ -274,7 +281,7 @@ def main(args):
     submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
 
     os.makedirs("results", exist_ok=True)
-    submission_path = f'results/sub_{select_data}.csv'
+    submission_path = f'results/sub_{select_model}.csv'
     submission_df.to_csv(submission_path, index=False)
     print(f"Submission saved as {submission_path}")
 
