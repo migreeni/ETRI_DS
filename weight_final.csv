@@ -1,0 +1,518 @@
+category,weight
+Singing bowl,0.8
+Scrape,0.6
+Crushing,0.7
+Rustle,0.5
+"Marimba, xylophone",0.6
+Squeal,0.4
+"Chicken, rooster",0.3
+Soul music,0.7
+Tapping (guitar technique),0.5
+Grunt,0.4
+Oink,0.3
+Thunder,0.8
+Turkey,0.3
+Song,0.6
+Buzz,0.4
+Slosh,0.5
+Sheep,0.3
+Electronic dance music,0.7
+Mechanical fan,0.6
+Firecracker,0.7
+Gobble,0.3
+Carnatic music,0.6
+Eruption,0.8
+Vibration,0.5
+Church bell,0.6
+Boing,0.4
+Ding,0.5
+Electric toothbrush,0.4
+Scratch,0.5
+Frog,0.4
+Jet engine,0.8
+"Dental drill, dentist's drill",0.7
+"Power windows, electric windows",0.5
+Emergency vehicle,0.7
+Sine wave,0.5
+Banjo,0.6
+Synthesizer,0.6
+Steelpan,0.6
+Tubular bells,0.6
+Yell,0.4
+Dog,0.4
+Creak,0.5
+Gospel music,0.6
+Crunch,0.5
+Rub,0.5
+Electric guitar,0.6
+"Fly, housefly",0.4
+Siren,0.7
+Train,0.7
+Disco,0.6
+Chant,0.5
+Snake,0.4
+Whistle,0.5
+Steam whistle,0.6
+Hum,0.5
+Crackle,0.5
+Tools,0.5
+Hair dryer,0.6
+Brass instrument,0.6
+Cello,0.6
+Ping,0.5
+Crow,0.4
+Swing music,0.6
+Bluegrass,0.6
+Rimshot,0.5
+"Domestic animals, pets",0.4
+Stomach rumble,0.5
+Glass,0.5
+Didgeridoo,0.6
+Classical music,0.7
+Bouncing,0.5
+Music of Africa,0.6
+Boom,0.7
+Guitar,0.6
+Car passing by,0.7
+Snoring,0.4
+"Canidae, dogs, wolves",0.4
+Power tool,0.6
+Sound effect,0.5
+Aircraft engine,0.7
+"Whack, thwack",0.5
+"Chuckle, chortle",0.4
+Arrow,0.3
+Heart murmur,0.4
+"Fire engine, fire truck (siren)",0.7
+Gurgling,0.4
+"Roaring cats (lions, tigers)",0.5
+Ringtone,0.4
+Music of Bollywood,0.6
+Squawk,0.4
+Clatter,0.5
+Drum kit,0.6
+Water,0.5
+"Hubbub, speech noise, speech babble",0.5
+Electronic music,0.6
+Blues,0.6
+Rustling leaves,0.5
+Rumble,0.5
+Lullaby,0.6
+Splinter,0.5
+Singing,0.8
+Shuffling cards,0.6
+Techno,0.7
+"Chewing, mastication",0.5
+Air brake,0.6
+New-age music,0.7
+Wind chime,0.6
+Thunderstorm,0.8
+Whimper (dog),0.5
+Screaming,0.7
+Bell,0.6
+Rapping,0.7
+Door,0.6
+Howl,0.7
+Dial tone,0.5
+Drip,0.6
+Opera,0.8
+Vacuum cleaner,0.6
+Caterwaul,0.5
+Engine knocking,0.6
+Coin (dropping),0.5
+"Inside, small room",0.6
+Hammer,0.7
+Soundtrack music,0.7
+Stream,0.6
+Gargling,0.5
+Train horn,0.8
+"Electric shaver, electric razor",0.6
+Whistling,0.6
+"Narration, monologue",0.7
+"Inside, public space",0.6
+Thunk,0.6
+Typing,0.6
+"Railroad car, train wagon",0.7
+Cacophony,0.7
+Harpsichord,0.6
+Tambourine,0.6
+Snort,0.5
+Tick-tock,0.6
+"Beep, bleep",0.6
+Microwave oven,0.5
+Jazz,0.7
+Yodeling,0.7
+Hi-hat,0.6
+Filing (rasp),0.6
+Biting,0.5
+Cough,0.5
+Echo,0.6
+Mouse,0.5
+"Burst, pop",0.6
+Bicycle bell,0.6
+Roar,0.7
+Baby laughter,0.7
+Dance music,0.7
+Ambulance (siren),0.8
+"Pigeon, dove",0.6
+Fowl,0.5
+Zither,0.6
+Harp,0.7
+Choir,0.7
+Duck,0.6
+White noise,0.6
+Quack,0.5
+Strum,0.6
+Owl,0.6
+Hip hop music,0.7
+Bird,0.6
+Musical instrument,0.6
+Change ringing (campanology),0.6
+Piano,0.7
+Trombone,0.6
+Skidding,0.6
+Heavy metal,0.7
+Jingle bell,0.6
+Static,0.5
+Cap gun,0.5
+Animal,0.5
+Chopping (food),0.6
+Flap,0.5
+Orchestra,0.7
+Plop,0.5
+Pulse,0.6
+Shatter,0.6
+Reverberation,0.6
+Reggae,0.7
+Raindrop,0.6
+Toothbrush,0.5
+Cupboard open or close,0.6
+Drawer open or close,0.6
+Cluck,0.5
+Music of Latin America,0.7
+Sampler,0.6
+Distortion,0.6
+Hammond organ,0.6
+Fart,0.5
+Crack,0.5
+Christmas music,0.7
+Middle Eastern music,0.7
+Christian music,0.7
+"Telephone dialing, DTMF",0.5
+Children shouting,0.7
+Sonar,0.3
+Alarm clock,0.8
+Slam,0.6
+Field recording,0.4
+Frying (food),0.5
+"Air horn, truck horn",0.6
+Motor vehicle (road),0.7
+Chirp tone,0.4
+"Subway, metro, underground",0.6
+"Splash, splatter",0.5
+Shout,0.7
+Whip,0.5
+"Burping, eructation",0.3
+"Jingle, tinkle",0.5
+Bowed string instrument,0.4
+Printer,0.3
+Pink noise,0.4
+Croak,0.3
+Waterfall,0.6
+"Baby cry, infant cry",0.8
+Aircraft,0.7
+Wind,0.6
+Helicopter,0.7
+House music,0.5
+Scissors,0.4
+Vocal music,0.6
+Mandolin,0.4
+Sniff,0.3
+Tick,0.2
+"Wind instrument, woodwind instrument",0.5
+Bass guitar,0.4
+Harmonic,0.4
+"Wail, moan",0.6
+Air conditioning,0.5
+Synthetic singing,0.4
+Tender music,0.6
+Finger snapping,0.3
+Buzzer,0.4
+Silence,0.9
+Truck,0.6
+Ambient music,0.5
+"Thump, thud",0.5
+Single-lens reflex camera,0.4
+Humming,0.4
+Traditional music,0.5
+Drum machine,0.5
+Squeak,0.4
+Tire squeal,0.4
+Environmental noise,0.5
+Jingle (music),0.5
+"Boat, Water vehicle",0.6
+Theme music,0.5
+Growling,0.4
+Funk,0.5
+"Bird flight, flapping wings",0.6
+Sneeze,0.3
+Cat,0.4
+Breaking,0.6
+Video game music,0.5
+Rail transport,0.6
+Snare drum,0.4
+Bagpipes,0.5
+"Child speech, kid speaking",0.7
+"Chink, clink",0.4
+Fireworks,0.6
+Wild animals,0.6
+Beatboxing,0.5
+Foghorn,0.6
+Groan,0.4
+"Smoke detector, smoke alarm",0.7
+Drum roll,0.5
+"Dishes, pots, and pans",0.5
+Speech synthesizer,0.4
+Bathtub (filling or washing),0.5
+Sink (filling or washing),0.4
+Mallet percussion,0.4
+Spray,0.4
+Camera,0.4
+Mosquito,0.3
+Sitar,0.4
+Jackhammer,0.6
+Toilet flush,0.5
+Basketball bounce,0.4
+Zing,0.3
+Music,0.6
+Cowbell,0.4
+Organ,0.5
+"Ice cream truck, ice cream van",0.5
+Theremin,0.4
+Computer keyboard,0.4
+Pour,0.4
+Whale vocalization,0.6
+Squish,0.3
+Clip-clop,0.4
+Whoop,0.4
+Tearing,0.4
+Sigh,0.3
+Rattle,0.4
+Throbbing,0.4
+Speech,0.7
+Ska,0.4
+Goose,0.3
+Bass drum,0.6
+Coo,0.4
+Ding-dong,0.5
+Crowd,0.8
+Babbling,0.6
+Sad music,0.7
+Typewriter,0.5
+Pizzicato,0.5
+Pant,0.4
+Yip,0.3
+Knock,0.6
+Keyboard (musical),0.6
+Wheeze,0.4
+Blender,0.6
+Rock and roll,0.7
+"Vehicle horn, car horn, honking",0.8
+Child singing,0.6
+Percussion,0.7
+Belly laugh,0.6
+Telephone,0.5
+"Inside, large room or hall",0.6
+Steam,0.5
+Bleat,0.3
+Laughter,0.7
+Children playing,0.6
+Double bass,0.5
+Mechanisms,0.6
+Motorcycle,0.7
+Whimper,0.4
+Clang,0.6
+Bang,0.6
+Electronic organ,0.6
+"Trickle, dribble",0.4
+Clock,0.5
+Lawn mower,0.6
+Salsa music,0.6
+Drum,0.7
+Hiccup,0.4
+Whir,0.5
+Electronica,0.6
+Fill (with liquid),0.5
+Snicker,0.4
+Chime,0.5
+Television,0.6
+Harmonica,0.5
+Trance music,0.6
+Ocean,0.7
+"Crowing, cock-a-doodle-doo",0.4
+Noise,0.6
+"Water tap, faucet",0.5
+Throat clearing,0.4
+Boiling,0.5
+Acoustic guitar,0.6
+Fire alarm,0.7
+Background music,0.6
+Plucked string instrument,0.5
+Civil defense siren,0.7
+Rhythm and blues,0.6
+"Violin, fiddle",0.5
+Wood block,0.5
+"Outside, urban or manmade",0.6
+Dubstep,0.6
+"Slap, smack",0.5
+"Ratchet, pawl",0.5
+Flute,0.5
+Wind noise (microphone),0.5
+Honk,0.5
+Car alarm,0.7
+Progressive rock,0.6
+Clapping,0.6
+Bow-wow,0.4
+"Crying, sobbing",0.7
+Cheering,0.6
+Ship,0.6
+Engine starting,0.6
+"Sailboat, sailing ship",0.6
+Glockenspiel,0.5
+Toot,0.4
+Clarinet,0.5
+Gush,0.4
+Fire,0.7
+Sanding,0.5
+Run,0.6
+"Walk, footsteps",0.6
+Train wheels squealing,0.6
+Shuffle,0.5
+Shofar,0.4
+"Motorboat, speedboat",0.6
+Gasp,0.4
+"Gunshot, gunfire",0.7
+Maraca,0.5
+Breathing,0.5
+Clickety-clack,0.5
+Sliding door,0.5
+"Propeller, airscrew",0.5
+"Neigh, whinny",0.4
+Psychedelic rock,0.6
+Sizzle,0.6
+Rock music,0.8
+Zipper (clothing),0.4
+Wedding music,0.5
+A capella,0.7
+"Rowboat, canoe, kayak",0.3
+Bellow,0.6
+Ukulele,0.4
+Folk music,0.6
+Patter,0.5
+Pig,0.3
+Heavy engine (low frequency),0.8
+Independent music,0.7
+Wood,0.5
+Cash register,0.4
+Sidetone,0.3
+Train whistle,0.7
+Doorbell,0.4
+Car,0.7
+Tap,0.5
+Electronic tuner,0.4
+Electric piano,0.6
+Vibraphone,0.5
+Scary music,0.8
+Cymbal,0.6
+"Steel guitar, slide guitar",0.6
+"Bee, wasp, etc.",0.3
+Roll,0.5
+Gears,0.6
+Gong,0.6
+Sawing,0.7
+Happy music,0.6
+Pump (liquid),0.4
+Horse,0.5
+Radio,0.4
+Afrobeat,0.6
+Light engine (high frequency),0.5
+Explosion,0.8
+Bus,0.7
+Chatter,0.5
+Idling,0.4
+Mains hum,0.4
+"Chirp, tweet",0.3
+Pulleys,0.5
+Drum and bass,0.7
+Effects unit,0.6
+"Crumpling, crinkling",0.5
+"Fixed-wing aircraft, airplane",0.7
+Engine,0.6
+Timpani,0.6
+Drill,0.7
+Keys jangling,0.4
+"Cattle, bovinae",0.3
+Hands,0.4
+"Accelerating, revving, vroom",0.7
+Alarm,0.8
+Fusillade,0.7
+Accordion,0.6
+Conversation,0.5
+"Bird vocalization, bird call, bird song",0.5
+"Outside, rural or natural",0.6
+Caw,0.3
+Artillery fire,0.7
+Tabla,0.6
+Giggle,0.4
+Clicking,0.5
+Exciting music,0.7
+Insect,0.3
+Trumpet,0.6
+Machine gun,0.8
+Medium engine (mid frequency),0.7
+Hiss,0.5
+Reversing beeps,0.4
+Rattle (instrument),0.5
+Music of Asia,0.6
+Country,0.6
+Chainsaw,0.7
+"Heart sounds, heartbeat",0.6
+Punk rock,0.8
+"Traffic noise, roadway noise",0.7
+Stir,0.5
+Goat,0.3
+Hoot,0.4
+String section,0.6
+Pop music,0.7
+Meow,0.4
+Scratching (performance technique),0.5
+Tuning fork,0.4
+Police car (siren),0.7
+Cricket,0.3
+Skateboard,0.4
+Liquid,0.4
+"Race car, auto racing",0.7
+Rain,0.5
+Bark,0.4
+"Rodents, rats, mice",0.3
+Busy signal,0.4
+"Cutlery, silverware",0.4
+Bicycle,0.5
+Mantra,0.6
+Music for children,0.7
+Sewing machine,0.4
+"Livestock, farm animals, working animals",0.6
+Writing,0.5
+Rain on surface,0.8
+Saxophone,0.6
+Chop,0.5
+Whispering,0.6
+Vehicle,0.7
+"Waves, surf",0.8
+"Whoosh, swoosh, swish",0.7
+Telephone bell ringing,0.4
+Applause,0.5
+"Smash, crash",0.6
+Purr,0.7
+Moo,0.6
+Flamenco,0.6
