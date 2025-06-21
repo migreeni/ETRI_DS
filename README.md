@@ -69,7 +69,6 @@ Use of pretrained models and external datasets is allowed under:
 
 ## Authors
 
-* Wonjun Choi (Korea University)
 * COSE471: Data Science, Term Project
 
 ## References
