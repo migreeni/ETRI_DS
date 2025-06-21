@@ -25,6 +25,8 @@ model : rf, lgbm, xgb, cat, lr, ensemble, stacking
 parser = argparse.ArgumentParser(description='Sleep Quality Prediction given Lifelog Data')
 parser.add_argument('-m', '--model', type=str, default='lgbm')
 parser.add_argument('-d', '--data', type=str, default='original')
+parser.add_argument('-t', '--target', type=str, default=None)
+
 args = parser.parse_args()
 
 
@@ -97,7 +99,10 @@ def main(args):
     oof_preds = {}
     test_preds = {}
 
-    for t in targets:
+    select_target = args.target
+    target_list = targets if select_target is None else [select_target]
+
+    for t in target_list:
         print(f"\nTraining target: {t}")
 
         if t == 'S1':
@@ -270,6 +275,16 @@ def main(args):
         f1_score_list.append(f1)
     print(f"Total F1 (Mean of 6 targets): {mean(f1_score_list):.4f}")
 
+    # Save F1 scores to CSV
+    f1_dict = {'target': targets, 'f1_score': f1_score_list}
+    f1_df = pd.DataFrame(f1_dict)
+    f1_df.loc[len(f1_df)] = ['Total', mean(f1_score_list)]
+    
+    f1_save_path = f'results/f1score_{select_data}_{select_model}.csv'
+    f1_df.to_csv(f1_save_path, index=False)
+    print(f"F1 scores saved to {f1_save_path}")
+
+
     print(f"\nMaking predictions for submission data {select_model}:")
     for t in targets:
         if t == 'S1':
@@ -281,7 +296,7 @@ def main(args):
     submission_df = submission_df[['subject_id', 'sleep_date', 'lifelog_date'] + targets]
 
     os.makedirs("results", exist_ok=True)
-    submission_path = f'results/sub_{select_model}.csv'
+    submission_path = f'results/sub_{select_data}_{select_model}.csv'
     submission_df.to_csv(submission_path, index=False)
     print(f"Submission saved as {submission_path}")
 
