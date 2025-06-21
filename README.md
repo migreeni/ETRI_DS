@@ -1,9 +1,3 @@
-다음은 첨부된 `f5c46c76-1024-4de3-98d6-2005b6c85251.png` 파일(수면 품질 및 상태 예측 프로젝트)에 대한 README 파일 예시입니다:
-
----
-
-# README
-
 ## Project Title
 
 **Sleep Quality and Condition Prediction using Lifelog Data**
