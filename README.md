@@ -77,3 +77,62 @@ Use of pretrained models and external datasets is allowed under:
 * Withings Sleep Analyzer
 * [ETRI Lifelog Dataset 2020](https://nanum.etri.re.kr/share/schung/ETRILifelogDataset2020)
 * Oh et al., “Sensor-Based Multi-Label Dataset Analysis Challenge”, ICTC 2024
+
+## 📁 Data Setup
+
+Due to the large size of the dataset, please download the data files manually and place them in a local folder named `data/`.
+
+- `ch2025_metrics_train.csv`: Training dataset  
+- `ch2025_submission_sample.csv`: Test dataset (for submission format)
+
+## 📂 Code Structure and Description
+
+### 🧹 Preprocessing
+
+- `preprocess_original_final.py`  
+  → Preprocessing pipeline for raw/original input data  
+- `preprocess_dwt_final.py`  
+  → Preprocessing pipeline applying Discrete Wavelet Transform (DWT)
+
+### 🧠 Model Execution
+
+- `main_original.py`  
+  → Training and evaluation code for individual models on original data  
+- `main.py`  
+  → Unified script for training models and selecting the optimal model per target metric (Q1–Q3, S1–S3)
+
+- `run.sh`  
+  → Shell script to execute `main.py` with different models and datasets
+
+- `execution.ipynb`  
+  → Jupyter Notebook for running predictions and comparing per-metric results to select best-performing models
+
+### 📊 Model Interpretation
+
+- `shap.py`  
+  → Script for computing SHAP (Shapley Additive exPlanations) values for model interpretability
+
+### 🤖 GRU Model
+
+- `GRU/`  
+  → Contains GRU-specific preprocessing, model training, and evaluation code for sequential prediction
+
+### 🧪 Additional Experiments
+
+- `other/`  
+  → Contains scripts used during various experiment stages (e.g., early runs, tests, ablations)
+
+---
+
+## 📌 Notes
+
+- All team members contributed to data preprocessing, predictive model development, result analysis, presentation preparation, and writing.
+- Final model selection was done per target metric, leading to improved performance over single-model approaches.
+
+---
+
+## 🏁 How to Run
+
+```bash
+bash run.sh
+
