@@ -77,8 +77,3 @@ Use of pretrained models and external datasets is allowed under:
 * Withings Sleep Analyzer
 * [ETRI Lifelog Dataset 2020](https://nanum.etri.re.kr/share/schung/ETRILifelogDataset2020)
 * Oh et al., “Sensor-Based Multi-Label Dataset Analysis Challenge”, ICTC 2024
-* [Dacon Competition Overview](https://dacon.io/competitions/official/236240/overview)
-
----
-
-필요시 영어 버전 외에 한국어 버전도 작성 가능합니다. 추가 항목이나 포맷 수정이 필요하면 알려주세요.
