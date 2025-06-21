@@ -4,7 +4,7 @@
 
 ## Overview
 
-This project aims to predict six sleep-related metrics using daily lifelog data collected from multimodal sensors (smartphone, smartwatch, sleep mat) and self-reported surveys. The task was conducted as part of the [Human Understanding AI Paper Challenge 2025](https://aifactory.space/task/2524/overview), which evaluates models on their ability to infer both subjective (questionnaire-based) and objective (sensor-based) indicators of sleep quality.
+This project aims to predict six sleep-related metrics using daily lifelog data collected from multimodal sensors (smartphone, smartwatch, sleep mat) and self-reported surveys. The task was conducted as part of the Human Understanding AI Paper Challenge 2025, which evaluates models on their ability to infer both subjective (questionnaire-based) and objective (sensor-based) indicators of sleep quality.
 
 ## Task Description
 
